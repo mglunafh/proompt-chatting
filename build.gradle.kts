@@ -1,21 +1,9 @@
 plugins {
-    alias(libs.plugins.kotlin.jvm)
-    application
+    alias(libs.plugins.kotlin.jvm) apply false
 }
 
-dependencies {
-    implementation(platform(libs.ktor.bom))
-    implementation(platform(libs.kotlinx.coroutines.bom))
-
-    implementation(libs.ktor.server.core)
-    implementation(libs.ktor.client.core)
-    implementation(libs.kotlinx.coroutines.core)
-}
-
-application {
-    mainClass.set("AppKt")
-}
-
-repositories {
-    mavenCentral()
+subprojects {
+    repositories {
+        mavenCentral()
+    }
 }

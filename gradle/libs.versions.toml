@@ -8,8 +8,8 @@ coroutines = "1.11.0"
 
 [libraries]
 # BOMs
-ktor-bom = { module = "io.ktor:ktor-bom", version.ref = "ktor" }
-kotlinx-coroutines-bom = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-bom", version.ref = "coroutines" }
+bom-ktor = { module = "io.ktor:ktor-bom", version.ref = "ktor" }
+bom-kotlinx-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-bom", version.ref = "coroutines" }
 
 # Libraries (version supplied by the BOMs above)
 ktor-server-core = { module = "io.ktor:ktor-server-core" }
