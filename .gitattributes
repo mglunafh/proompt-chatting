@@ -1,0 +1,11 @@
+* text=auto
+
+# Shell scripts must use LF
+gradlew text eol=lf
+*.sh   text eol=lf
+
+# Windows-specific scripts must use CRLF
+gradlew.bat text eol=crlf
+*.bat        text eol=crlf
+*.cmd        text eol=crlf
+*.ps1        text eol=crlf

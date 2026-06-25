@@ -1,0 +1,20 @@
+[versions]
+# Plugin versions
+kotlin = "2.3.21"
+
+# BOM versions
+ktor = "3.5.1"
+coroutines = "1.11.0"
+
+[libraries]
+# BOMs
+ktor-bom = { module = "io.ktor:ktor-bom", version.ref = "ktor" }
+kotlinx-coroutines-bom = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-bom", version.ref = "coroutines" }
+
+# Libraries (version supplied by the BOMs above)
+ktor-server-core = { module = "io.ktor:ktor-server-core" }
+ktor-client-core = { module = "io.ktor:ktor-client-core" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core" }
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
