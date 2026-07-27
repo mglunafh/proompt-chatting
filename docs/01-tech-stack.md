@@ -1,0 +1,33 @@
+# Tech stack
+
+- **Kotlin (JVM)** — implementation language for both server and client.
+- **Gradle (Kotlin DSL)** — build tool for the multi-module project.
+- **kotlinx-coroutines** — the concurrency model across server and client.
+- **kotlinx.serialization** — JSON encoding for WebSocket frames and REST bodies.
+- **Ktor server** — the web framework hosting both surfaces below.
+- **Ktor WebSockets** — real-time transport for the live message stream.
+- **REST over HTTP** — request/response surface for login, history backfill, and uploads.
+- **Ktor client** — the JVM console client's networking, over `wss://` and `https://`.
+- **PostgreSQL** — single instance, source of truth for users, conversations, and message history.
+- **Exposed** — type-safe SQL access from Kotlin.
+- **Flyway** — schema migrations under version control, from the first table onward.
+- **In-process connection registry** — a `ConcurrentHashMap` of live sessions for routing and fan-out; no Redis, no external message broker.
+- **In-memory ephemeral state** — presence and typing indicators are never persisted.
+- **Local filesystem for attachments** — no object storage, no CDN.
+- **password4j (Argon2id)** — password hashing.
+- **Clikt** — command and argument parsing for the client.
+- **Mordant** — terminal styling for the line-based console client.
+- **Mosaic** — Compose-for-terminal rendering for the full-screen TUI client.
+- **Compose Desktop** (optional for GUI) — deferred pointer-driven frontend.
+- **ktlint** (ktlint-gradle plugin) — code formatting, enforced in CI.
+- **Manual DI** (maybe Koin later) — wiring via a composition root at each entry point.
+- **SQLite** — client-side local store (session/token now, message cache later).
+- **Exposed** (optional SQLDelight) — client-side query layer over SQLite.
+- **JUnit 5** — test framework.
+- **Ktor `testApplication`** — in-process HTTP + WebSocket surface tests.
+- **Testcontainers (Postgres)** — integration tests against a real database.
+- **MockK** — mocking for small external seams (fakes preferred at interface boundaries).
+- **kotlinx-coroutines-test** — deterministic virtual-time testing of coroutines and flows.
+- **Shadow JAR** (Gradle Shadow plugin) — self-contained fat JARs for server and clients.
+- **Docker Compose** — deployment and local development.
+- **Caddy** — reverse proxy terminating TLS with automatic Let's Encrypt certificates.
