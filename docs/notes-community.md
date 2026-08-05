@@ -33,7 +33,9 @@ below follows from those two facts.
 
 - **A name and a description** — name rules in [notes-validation.md](notes-validation.md).
 - **Public or private** — `visibility` on the conversation. A public channel is listed and its posts readable by anyone, and a user who wants to take part inserts their own membership; a private one is invisible to non-members and entered only by invitation. The author adds members directly under either.
-- **Membership is what allows writing** — a non-member of a public channel reads it and nothing more: no posting, no commenting, no read cursor, and no live delivery, since fan-out follows membership.
+- **Created by any user**, public or private, the creator becoming its owner ([notes-roles.md](notes-roles.md)). Only a server channel takes an admin, since its membership is everyone.
+- **Membership is what allows writing** — a non-member of a public channel reads it and nothing more: no posting, no commenting, no read cursor, and no live delivery, since fan-out follows membership. A mod or admin moderating a public channel is the exception and does so without joining ([notes-roles.md](notes-roles.md)).
+- **Joining and reading both check for a kick** — a `conversation_restrictions` row with `kicked_at` set blocks the self-insert and the read, which is the only thing that puts a kicked user below the stranger baseline here ([notes-roles.md](notes-roles.md)). The two checks are the only places that record is consulted.
 - **Channels are found by name** — the listing matches a query against the name and description of public channels, a lookup over conversation rows rather than message bodies. Message search stays inside the caller's own conversations ([notes-search.md](notes-search.md)).
 - **A member may leave at will** — their own row, deleted by themselves. A sole owner transfers ownership first, per [notes-roles.md](notes-roles.md).
 - **No per-member history floor** — a member who joins later reads every post and comment made before them.
@@ -55,5 +57,5 @@ than managed:
 - **Membership is insert-only** — there is no leave, so there is no rejoin and no question of what a returning member's read cursor holds.
 - **No per-member history floor** — an account created after the channel reads everything announced before it existed.
 - **Mute is the only relief** — the three-level per-conversation setting already on the membership row, unchanged.
-- **Written to by server admins** — guarded by the server-wide admin role that already exists, so this kind needs no per-conversation roles and can ship before they are designed.
-- **Comments follow the channel rules** — the same per-channel default and per-post override.
+- **Posted to by server admins** — top-level posts are guarded by the server-wide admin role that already exists, so this kind needs no per-conversation roles and can ship before they are designed.
+- **Comments follow the channel rules** — the same per-channel default and per-post override, and where they are enabled any member may leave one. Commenting is the only thing a member writes here, which is what keeps the kind free of a role column.

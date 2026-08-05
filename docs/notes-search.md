@@ -1,5 +1,17 @@
 # Search notes
 
+## What it is
+
+A plain query string matched against the bodies of messages the caller can
+already read, answered as a page of messages most recent first. Two
+implementations produce the same response, so what follows compares them and
+then fixes the contract that keeps the choice reversible.
+
+## What it solves
+
+- **Finding a message you remember but cannot scroll to** — history paging is linear, and the archive outgrows what anyone will page through within weeks.
+- **Not searching what you cannot read** — the same membership predicate history uses, so a query returns nothing a fetch would have refused.
+
 ## ILIKE
 
 ### Implementation
@@ -14,7 +26,8 @@ FROM messages m
 JOIN conversation_members cm
   ON cm.conversation_id = m.conversation_id
  AND cm.user_id = $caller
-WHERE m.body ILIKE $pattern ESCAPE '\'
+WHERE m.deleted_at IS NULL
+  AND m.body ILIKE $pattern ESCAPE '\'
   AND m.id < $cursor
 ORDER BY m.id DESC
 LIMIT $page;
@@ -23,7 +36,8 @@ LIMIT $page;
 The server builds `$pattern` from the user's string: escape `%`, `_` and the
 backslash itself, then wrap the result in `%…%`. Skipping the escape hands every
 user a wildcard, and a query of a single `%` returns their whole history a page
-at a time. The membership join is what bounds the work — without it the
+at a time. An empty query is rejected before the wrap, since `%%` reaches the
+same result by a different road. The membership join is what bounds the work — without it the
 predicate is evaluated over every message on the instance, including
 conversations the caller cannot read. Case folding comes from `ILIKE`, so there
 is no collation to configure, though its behaviour on non-ASCII text follows the
@@ -116,6 +130,9 @@ server-rendered match context. Neither is needed to ship the route.
 
 ## What neither route changes
 
-- **Deleted messages never match** — a tombstone keeps its row with the body cleared.
+- **Deleted messages never match** — a tombstone keeps its row, so the predicate is `deleted_at IS NULL` rather than a cleared body, which would depend on whether clearing leaves null or an empty string.
+- **Blocked senders match and are filtered at render** — the server applies no block predicate, and the client collapses the result like any other body from that sender ([notes-blocking.md](notes-blocking.md)).
+- **A mention matches on the mentioned name** — bodies hold `<@42>` rather than a name ([notes-core-messaging.md](notes-core-messaging.md)), so a query term naming a user is resolved to their ID and matched against the token too, or searching a name silently misses every message that mentions them.
+- **Attachment filenames are outside search** — the query matches bodies, so a file is found by the message that carried it or not at all.
 - **Edits need no extra handling** — a scan reads the current body, and a generated column is maintained in the same transaction as the edit.
 - **Abuse is already covered** — search is a query endpoint, so the per-user token bucket in front of query endpoints applies.

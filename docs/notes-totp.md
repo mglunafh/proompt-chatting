@@ -1,5 +1,16 @@
 # TOTP notes
 
+## What it is
+
+A second factor a console client can actually reach: a shared secret the server
+holds in recoverable form, and the storage, verification and lifecycle rules
+that follow from it having to stay recoverable.
+
+## What it solves
+
+- **A stolen password not being enough** — every other credential here is verify-only, so nothing else stands between a leaked password and a session.
+- **A lost device not being the end** — with no email channel, recovery codes are the only self-service way back in.
+
 ## Why the secret cannot be hashed
 
 A password hash works because the server only needs to *verify*: hash the
@@ -13,18 +24,8 @@ follows from that.
 
 ## Storage model
 
-A separate table rather than columns on `users`:
-
-```
-totp_credentials(
-  user_id,
-  secret_ciphertext,   -- AES-GCM encrypted, never plaintext
-  nonce,
-  key_version,         -- which KEK encrypted this row
-  enabled_at,          -- null until a live code confirms enrollment
-  last_used_step       -- replay guard
-)
-```
+A separate table rather than columns on `users`, with the codes in a second one
+([notes-db-schema.md](notes-db-schema.md)).
 
 - **Separate table** — 2FA is opt-in, so most users have no row rather than a table of nulls; the crypto blob stays out of the `users` row read on every request; and clearing 2FA (which an admin reset does) is a row delete.
 - **Recovery codes are hashed, not encrypted** — verify-only, so they follow the session-token pattern in [03-authentication.md](03-authentication.md): high-entropy random plus a fast hash, single-use.
@@ -47,7 +48,7 @@ totp_credentials(
 
 ### Verification
 
-- **Rate limit and lock out** — six digits is a million possibilities, and a ±1 step window makes three codes valid at once. RFC 4226 §7.3 calls for throttling; typical practice is lockout after 5–10 failures.
+- **Rate limit and lock out** — six digits is a million possibilities, and a ±1 step window makes three codes valid at once. RFC 4226 §7.3 calls for throttling. Example: lock out after 5–10 consecutive failures.
 - **Keep the window at ±1 step** — each extra step widens the guessing surface linearly. Correct NTP removes the need for more.
 - **Record the consumed time step** and reject reuse, so an observed code dies at the end of its window.
 - **Constant-time comparison** of the submitted code.
@@ -76,24 +77,24 @@ a console client can reach, not the strongest available.
 Worth adopting at 10–50 users, self-hosted, single Postgres:
 
 - 160-bit secret from `SecureRandom`
-- AES-256-GCM, key from an env var, `user_id` as AAD, key-version column
+- AES-256-GCM, key from a mounted Docker secret, `user_id` as AAD, key-version column
 - Verification rate limit with lockout, ±1 step window, consumed-step replay guard
 - Pending-until-confirmed enrollment, never re-exposed
 - Recovery codes hashed and single-use
 - Secret never written to a log line
 
-Worth skipping: KMS or Vault, per-record data keys, WebAuthn. If the env-var key
+Worth skipping: KMS or Vault, per-record data keys, WebAuthn. If the mounted key
 is outgrown, Vault's Transit engine is the natural upgrade and needs no schema
 change beyond the `key_version` column.
 
-The ceiling: with the key in an env var on the same host as the database,
-whoever owns the host owns both. The control is aimed at leaked dumps and stolen
+The ceiling: with the key on the same host as the database, whoever owns the
+host owns both. The control is aimed at leaked dumps and stolen
 backups — the realistic threat for a server with `pg_dump` writing to local
 disk. Keeping the key out of the backups is what makes it work at all.
 
 ## Open decisions
 
-- **Where the encryption key lives** — env var alongside `BOOTSTRAP_ADMIN_*`, a mounted file, or something else. Determines the rotation procedure.
-- **Rate-limit and lockout thresholds** for code verification, and whether they share machinery with the still-undecided general rate limiting in the Security area.
+- **The rotation procedure** — the KEK is a secret like any other the server takes, so it arrives as a Docker Compose secret mounted read-only and read through its `X_FILE` variable. What is undecided is how a new version is introduced: `key_version` allows lazy re-encryption, which needs both keys readable at once and something that says when the last row under the old one is gone.
+- **Rate-limit and lockout thresholds for code verification** — the numbers, and whether they reuse the login limiter's machinery in [notes-rate-limiting.md](notes-rate-limiting.md) or stand alone. That limiter keys on submitted username and source IP; a code failure is a third dimension, keyed on the user the password check has already identified.
 - **Re-authentication scope** — which operations demand a fresh factor, given there is no email channel to notify on.
-- **Whether 2FA stays in scope at all** — three of the four source docs omit it entirely, and minimax-m3 schedules it last, "when asked".
+- **How login carries the "needs second factor" state** — an opaque short-TTL challenge the client returns with the code, or a resubmitted password the server verifies alongside it. The challenge costs one Argon2id verify per login rather than two and keeps code failures off the password limiter's ladder; resubmission stores nothing between the two calls.

@@ -24,8 +24,11 @@ can never be mistaken for the other.
 - **User** — no server-wide powers; issues invites only when `allow_user_invites` is on, per [02-registration.md](02-registration.md).
 
 A ban is the same act as disabling an account: it sets the disabled flag, deletes
-the user's sessions and closes their sockets. There is no second, admin-only
-version of it — `disabled` is the column's name, not a separate power.
+the user's sessions, closes their sockets, and revokes their outstanding invites
+([02-registration.md](02-registration.md)). There is no second, admin-only
+version of it — `disabled` is the column's name, not a separate power. A user
+retiring their own account takes the same path, differing only in the audit
+action it writes.
 
 `server_role` is read by joining `users` on the session lookup, so a REST request
 always sees the current one. A WebSocket authenticates once at upgrade, so the heartbeat
@@ -35,7 +38,7 @@ one tick.
 
 ### What stays with admins
 
-- **Password reset issuance** — the token sets a new password, revokes the user's sessions and clears their enrolled second factor, so whoever issues one can become that user. A mod holding it is an admin under another name.
+- **Password reset issuance** — the token sets a new password and revokes the user's sessions, so whoever issues one can become that user. A mod holding it is an admin under another name. Admins may issue one for each other, which escalates nothing and is what keeps a locked-out admin recoverable.
 - **Promotion and demotion** — otherwise a mod manufactures an accomplice.
 - **Unconditional invite issuance** — mods fall under `allow_user_invites` with regular users. Inviting extends the vouching chain rather than enforcing anything, so it tracks trust rather than the enforcement role.
 - **Multi-use invites** — only an admin may set `max_uses` above one.
@@ -44,9 +47,11 @@ one tick.
 
 ### Protections
 
-- **Nobody acts on an equal or higher role** — banning, demoting and issuing a reset token all require the target's role to be strictly lower than the actor's, so a mod cannot ban a mod and no demotion war is possible.
+- **Nobody acts on an equal or higher role** — banning and demoting require the target's role to be strictly lower than the actor's, so a mod cannot ban a mod and no demotion war is possible. Reset issuance is exempt.
+- **A holder may always act on themselves** — how the bootstrap admin retires itself ([02-registration.md](02-registration.md)), with last-active-admin protection still catching the last one.
 - **The last active admin cannot be disabled, demoted or banned** — enforced server-side, per [02-registration.md](02-registration.md).
 - **Not extended to mods** — the server functions with none, so there is nothing to lock out.
+- **Removing a rogue admin takes the host** — no admin may demote or ban an equal. Admins run the box, so the admin-and-mod line is a security boundary and the admin-and-operator line is not.
 - **Every promotion and demotion is audited** — the same record the audit chain already keeps for admin creation.
 
 ## Conversation scope
@@ -75,7 +80,7 @@ demotes ordinary members only, and acting on an officer takes the owner.
 ### Succession
 
 - **A sole owner cannot leave** — they transfer ownership or archive the conversation first. The only exception to leaving at will.
-- **A disabled owner is replaced automatically** — a ban or disable promotes the longest-tenured officer, or the longest-tenured member if there are none. Without it a private conversation is stuck ownerless, since no server role can reach in to appoint anyone.
+- **A disabled owner is replaced automatically** — a ban or disable promotes the longest-tenured officer, or the longest-tenured member if there are none, skipping accounts that are themselves disabled. Without it a private conversation is stuck ownerless, since no server role can reach in to appoint anyone. A conversation left with no active member is archived.
 
 ### Membership changes
 
@@ -86,25 +91,26 @@ demotes ordinary members only, and acting on an officer takes the owner.
 - **Archived rather than deleted** — setting `archived_at` makes a conversation read-only, keeps its history for the members who were in it, and takes it out of the active list. Nothing is destroyed, matching disable-don't-delete for accounts and the tombstone a deleted message leaves.
 - **The owner archives and unarchives** — and for a server channel, which carries no conversation role, an admin does both.
 - **Read-only covers the message stream, not `archived_at` itself** — otherwise archiving would be one-way and nothing could bring the conversation back.
+- **The change rides the conversation metadata event** — members learn at once rather than keeping a composer over a conversation that no longer takes messages ([notes-core-messaging.md](notes-core-messaging.md)).
 
 ### Audit
 
-- **Every conversation-scope action is recorded** — kicks, silences, role changes, ownership transfers, metadata edits and deletion, in the same table as the server-scope events, carrying the conversation id.
+- **Every conversation-scope action is recorded** — kicks, silences, role changes, ownership transfers, metadata edits, archiving, and a moderator deleting someone else's message, in the same table as the server-scope events, carrying the conversation id.
 
 ## Remedies
 
 Three steps against a member, in order of weight: silence takes writing, kick
 takes reading, ban takes the account.
 
-Both conversation-scope remedies live in `conversation_restrictions`, one row per
-`(conversation_id, user_id)` — `kicked_at`, `kicked_by`, `silenced_until`,
-`silenced_by` — kept out of `conversation_members`. That buys two things: a
+Both conversation-scope remedies live in `conversation_restrictions`
+([notes-db-schema.md](notes-db-schema.md)), one row per `(conversation_id,
+user_id)` and kept out of `conversation_members`. That buys two things: a
 membership row still means exactly what it means in
 [notes-core-messaging.md](notes-core-messaging.md), so no fan-out, history,
 search or heartbeat predicate changes; and neither remedy is cleared by the
 member leaving.
 
-- **Silence** — a `silenced_until` timestamp, nullable and self-clearing, so a timeout needs no follow-up call and an indefinite silence is a far date. Read on the send path, which already loads the membership row for the mute level and picks the restriction up in the same join.
+- **Silence** — a `silenced_until` timestamp, nullable and self-clearing, so a timeout needs no follow-up call and an indefinite silence is a far date. Read on the send path, which loads the membership row for the mute level and joins the restriction beside it — one join, and the price of keeping the remedies off that row.
 - **Who may silence** — owners and officers within their own conversation, and mods within any public channel or server channel, both writing the same `conversation_restrictions` row. A mod may also silence server-wide, where it sits on the user row instead and reaches everything at once.
 - **A server-wide silence applies everywhere, private conversations included** — an account-level restriction like a ban, not a server role reaching into a conversation. Nothing is read or moderated.
 - **Kick** — deletes the membership row and sets `kicked_at`. The record is consulted in two places rather than six: the read grant and the join path.
