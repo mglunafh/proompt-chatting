@@ -1,5 +1,7 @@
 plugins {
     alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.ktlint)
+    application
 }
 
 dependencies {
@@ -7,5 +9,14 @@ dependencies {
     implementation(platform(libs.bom.kotlinx.coroutines))
 
     implementation(libs.ktor.server.core)
+    implementation(libs.ktor.server.cio)
     implementation(libs.kotlinx.coroutines.core)
+
+    testImplementation(platform(libs.bom.junit))
+    testImplementation(libs.junit.jupiter)
+    testRuntimeOnly(libs.junit.platform.launcher)
+}
+
+application {
+    mainClass.set("dev.burufi.chatting.simple.server.ServerKt")
 }
