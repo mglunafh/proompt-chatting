@@ -1,0 +1,716 @@
+<title>__TITLE__</title>
+
+<style>
+  :root {
+    --bg: #f3f5f7;
+    --surface: #ffffff;
+    --ink: #151a21;
+    --muted: #5c6774;
+    --line: #d5dce4;
+    --rail-ink: #8a94a1;
+    --accent: #3a6ea5;
+    --task-bg: #e4f2e9;
+    --task-line: #2f8f5b;
+    --task-ink: #1b6b41;
+    --task-solid: #2f8f5b;
+    --feat-bg: #fbe7e9;
+    --feat-line: #c0394b;
+    --feat-ink: #a32b3d;
+    --feat-solid: #c0394b;
+    --edge: #c3ccd6;
+    --edge-active: #3a6ea5;
+    --on-solid: #ffffff;
+    --shadow: 0 1px 2px rgba(21, 26, 33, .06), 0 8px 24px rgba(21, 26, 33, .08);
+
+    --font-mono: ui-monospace, "JetBrains Mono", "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+    --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1319;
+      --surface: #161c24;
+      --ink: #e4eaf1;
+      --muted: #8d99a8;
+      --line: #28313d;
+      --rail-ink: #6b7684;
+      --accent: #77a5dd;
+      --task-bg: #132a1e;
+      --task-line: #3fae72;
+      --task-ink: #63c48f;
+      --task-solid: #2f9e63;
+      --feat-bg: #2a151a;
+      --feat-line: #d95c6d;
+      --feat-ink: #ef8592;
+      --feat-solid: #c8455a;
+      --edge: #2f3a47;
+      --edge-active: #77a5dd;
+      --on-solid: #ffffff;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px rgba(0, 0, 0, .35);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #0f1319;
+    --surface: #161c24;
+    --ink: #e4eaf1;
+    --muted: #8d99a8;
+    --line: #28313d;
+    --rail-ink: #6b7684;
+    --accent: #77a5dd;
+    --task-bg: #132a1e;
+    --task-line: #3fae72;
+    --task-ink: #63c48f;
+    --task-solid: #2f9e63;
+    --feat-bg: #2a151a;
+    --feat-line: #d95c6d;
+    --feat-ink: #ef8592;
+    --feat-solid: #c8455a;
+    --edge: #2f3a47;
+    --edge-active: #77a5dd;
+    --on-solid: #ffffff;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px rgba(0, 0, 0, .35);
+  }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 40px 24px 72px;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  .masthead {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 20px;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: -.01em;
+    text-wrap: balance;
+  }
+
+  .lede {
+    margin: 0;
+    max-width: 62ch;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    color: var(--muted);
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 20px;
+    font-size: 12px;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .key {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .swatch {
+    width: 22px;
+    height: 12px;
+    border-radius: 3px;
+    border: 1px solid var(--task-line);
+    background: var(--task-bg);
+  }
+
+  .swatch.feature {
+    border-color: var(--feat-line);
+    background: var(--feat-bg);
+  }
+
+  .stroke {
+    width: 26px;
+    height: 0;
+    border-top: 2px solid var(--edge);
+  }
+
+  .stroke.dashed {
+    border-top-style: dashed;
+  }
+
+  .scroller {
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+
+  .board {
+    position: relative;
+    min-width: 700px;
+  }
+
+  .edges {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .edges path {
+    fill: none;
+    stroke: var(--edge);
+    stroke-width: 1.5;
+    transition: stroke .16s ease, stroke-width .16s ease, opacity .16s ease;
+  }
+
+  .edges path.coverage {
+    stroke-dasharray: 4 4;
+  }
+
+  .edges path.active {
+    stroke: var(--edge-active);
+    stroke-width: 2.25;
+  }
+
+  .board.has-selection .edges path:not(.active) {
+    opacity: .28;
+  }
+
+  .rows {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 26px;
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: 40px 1fr;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .depth {
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: .08em;
+    color: var(--rail-ink);
+    text-align: right;
+    border-right: 1px solid var(--line);
+    padding-right: 12px;
+    align-self: stretch;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+  }
+
+  .lane {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .node {
+    appearance: none;
+    font: inherit;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: 1px solid;
+    background: var(--surface);
+    cursor: pointer;
+    transition: opacity .16s ease, transform .16s ease, box-shadow .16s ease,
+                background-color .16s ease, border-color .16s ease, color .16s ease;
+  }
+
+  .node .id {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .06em;
+  }
+
+  .node .name {
+    font-size: 13px;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+
+  .node.task {
+    background: var(--task-bg);
+    border-color: var(--task-line);
+  }
+
+  .node.task .id {
+    color: var(--task-ink);
+  }
+
+  .node.feature {
+    background: var(--feat-bg);
+    border-color: var(--feat-line);
+  }
+
+  .node.feature .id {
+    color: var(--feat-ink);
+  }
+
+  .node:hover {
+    box-shadow: var(--shadow);
+    transform: translateY(-1px);
+  }
+
+  .node:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .board.has-selection .node {
+    opacity: .3;
+  }
+
+  .board.has-selection .node.selected,
+  .board.has-selection .node.direct,
+  .board.has-selection .node.upstream {
+    opacity: 1;
+  }
+
+  .node.task.selected,
+  .node.task.direct {
+    background: var(--task-solid);
+    border-color: var(--task-solid);
+    box-shadow: var(--shadow);
+  }
+
+  .node.feature.selected,
+  .node.feature.direct {
+    background: var(--feat-solid);
+    border-color: var(--feat-solid);
+    box-shadow: var(--shadow);
+  }
+
+  .node.selected .id,
+  .node.selected .name,
+  .node.direct .id,
+  .node.direct .name {
+    color: var(--on-solid);
+  }
+
+  .node.task.selected,
+  .node.feature.selected {
+    box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+  }
+
+  .node.task.upstream {
+    border-color: var(--task-solid);
+    border-style: dashed;
+  }
+
+  .node.feature.upstream {
+    border-color: var(--feat-solid);
+    border-style: dashed;
+  }
+
+  .status {
+    min-height: 44px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--surface);
+    padding: 12px 16px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px 12px;
+    font-size: 13px;
+  }
+
+  .status .hint {
+    font-family: var(--font-sans);
+    color: var(--muted);
+  }
+
+  .status .label {
+    font-size: 11px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .status .ids {
+    color: var(--ink);
+  }
+
+  .status button {
+    appearance: none;
+    font: inherit;
+    font-size: 12px;
+    margin-left: auto;
+    padding: 4px 10px;
+    border-radius: 4px;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+  }
+
+  .status button:hover {
+    color: var(--ink);
+    border-color: var(--accent);
+  }
+
+  .status button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .tip {
+    position: fixed;
+    z-index: 10;
+    max-width: 46ch;
+    padding: 12px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .12s ease;
+  }
+
+  .tip[data-open="true"] {
+    opacity: 1;
+  }
+
+  .tip .tip-id {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .06em;
+  }
+
+  .tip.task .tip-id {
+    color: var(--task-ink);
+  }
+
+  .tip.feature .tip-id {
+    color: var(--feat-ink);
+  }
+
+  .tip .tip-desc {
+    margin: 6px 0 0;
+    font-family: var(--font-sans);
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--ink);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      transition: none !important;
+    }
+
+    .node:hover {
+      transform: none;
+    }
+  }
+</style>
+
+<div class="page">
+  <header class="masthead">
+    <h1>__TITLE__</h1>
+    <p class="lede">
+      Tasks and features in one tree, ordered by depth: a row can only start once every row above it
+      has landed. Hover anything for its description; click any node to trace what it depends on.
+    </p>
+    <div class="legend">
+      <span class="key"><span class="swatch"></span> Task</span>
+      <span class="key"><span class="swatch feature"></span> Feature</span>
+      <span class="key"><span class="stroke"></span> Order</span>
+      <span class="key"><span class="stroke dashed"></span> Coverage</span>
+    </div>
+  </header>
+
+  <div class="scroller">
+    <div class="board" id="board">
+      <svg class="edges" id="edges" aria-hidden="true"></svg>
+      <div class="rows" id="rows"></div>
+    </div>
+  </div>
+
+  <div class="status" id="status" role="status" aria-live="polite"></div>
+</div>
+
+<div class="tip" id="tip" role="tooltip" aria-hidden="true">
+  <div class="tip-id" id="tip-id"></div>
+  <p class="tip-desc" id="tip-desc"></p>
+</div>
+
+<script>
+  // Written by tools/deps-graph.py; the line below is replaced wholesale.
+  const GRAPH = {"nodes": [], "order": [], "coverage": []}; /*__GRAPH_DATA__*/
+
+  const NODES = GRAPH.nodes;
+  const ORDER = GRAPH.order;
+  const COVERAGE = GRAPH.coverage;
+
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  const byId = new Map(NODES.map(n => [n.id, n]));
+  const parents = new Map(NODES.map(n => [n.id, []]));
+  const children = new Map(NODES.map(n => [n.id, []]));
+  ORDER.forEach(([from, to]) => {
+    parents.get(to).push(from);
+    children.get(from).push(to);
+  });
+
+  const board = document.getElementById('board');
+  const rowsEl = document.getElementById('rows');
+  const svg = document.getElementById('edges');
+  const statusEl = document.getElementById('status');
+  const tip = document.getElementById('tip');
+  const tipId = document.getElementById('tip-id');
+  const tipDesc = document.getElementById('tip-desc');
+
+  const els = new Map();
+  const paths = [];
+  let selected = null;
+
+  function buildRows() {
+    const depths = [...new Set(NODES.map(n => n.row))].sort((a, b) => a - b);
+    depths.forEach(depth => {
+      const row = document.createElement('div');
+      row.className = 'row';
+
+      const rail = document.createElement('div');
+      rail.className = 'depth';
+      rail.textContent = String(depth).padStart(2, '0');
+      row.appendChild(rail);
+
+      const lane = document.createElement('div');
+      lane.className = 'lane';
+      NODES.filter(n => n.row === depth).forEach(n => lane.appendChild(makeNode(n)));
+      row.appendChild(lane);
+
+      rowsEl.appendChild(row);
+    });
+  }
+
+  function makeNode(n) {
+    const el = document.createElement('button');
+    el.className = 'node ' + n.kind;
+    el.type = 'button';
+    el.dataset.id = n.id;
+    el.setAttribute('aria-pressed', 'false');
+
+    const id = document.createElement('span');
+    id.className = 'id';
+    id.textContent = n.id;
+
+    const name = document.createElement('span');
+    name.className = 'name';
+    name.textContent = n.name;
+
+    el.append(id, name);
+
+    el.addEventListener('pointerenter', () => showTip(n, el));
+    el.addEventListener('focus', () => showTip(n, el));
+    el.addEventListener('pointerleave', hideTip);
+    el.addEventListener('blur', hideTip);
+    el.addEventListener('click', event => {
+      event.stopPropagation();
+      select(selected === n.id ? null : n.id);
+    });
+
+    els.set(n.id, el);
+    return el;
+  }
+
+  function makePath(from, to, kind) {
+    const path = document.createElementNS(SVG_NS, 'path');
+    path.setAttribute('class', kind);
+    svg.appendChild(path);
+    paths.push({ from, to, kind, path });
+  }
+
+  function buildEdges() {
+    ORDER.forEach(([from, to]) => makePath(from, to, 'order'));
+    COVERAGE.forEach(([from, to]) => makePath(from, to, 'coverage'));
+  }
+
+  function drawEdges() {
+    const base = board.getBoundingClientRect();
+    svg.setAttribute('viewBox', `0 0 ${base.width} ${base.height}`);
+    svg.setAttribute('width', base.width);
+    svg.setAttribute('height', base.height);
+
+    paths.forEach(({ from, to, path }) => {
+      const a = els.get(from).getBoundingClientRect();
+      const b = els.get(to).getBoundingClientRect();
+      const x1 = a.left - base.left + a.width / 2;
+      const y1 = a.bottom - base.top;
+      const x2 = b.left - base.left + b.width / 2;
+      const y2 = b.top - base.top;
+      const bend = Math.max((y2 - y1) * 0.45, 12);
+      path.setAttribute('d', `M ${x1} ${y1} C ${x1} ${y1 + bend}, ${x2} ${y2 - bend}, ${x2} ${y2}`);
+    });
+  }
+
+  function ancestorsOf(ids) {
+    const seen = new Set();
+    const queue = [...ids];
+    while (queue.length) {
+      const current = queue.pop();
+      (parents.get(current) || []).forEach(parent => {
+        if (!seen.has(parent)) {
+          seen.add(parent);
+          queue.push(parent);
+        }
+      });
+    }
+    return seen;
+  }
+
+  function select(id) {
+    selected = id;
+
+    els.forEach((el, key) => {
+      el.classList.remove('selected', 'direct', 'upstream');
+      el.setAttribute('aria-pressed', String(key === id));
+    });
+    paths.forEach(({ path }) => path.classList.remove('active'));
+    board.classList.toggle('has-selection', Boolean(id));
+
+    if (!id) {
+      renderStatus(null);
+      return;
+    }
+
+    const node = byId.get(id);
+    const isFeature = node.kind === 'feature';
+
+    // Solid neighbours: for a feature, the tasks that complete it; for a task, the features it covers.
+    const direct = isFeature
+      ? COVERAGE.filter(([, feature]) => feature === id).map(([task]) => task)
+      : COVERAGE.filter(([task]) => task === id).map(([, feature]) => feature);
+    const upstream = isFeature
+      ? [...ancestorsOf(direct)].filter(t => !direct.includes(t))
+      : [...ancestorsOf([id])];
+    const lit = isFeature ? new Set([...direct, ...upstream]) : new Set([id, ...upstream]);
+
+    els.get(id).classList.add('selected');
+    direct.forEach(n => els.get(n).classList.add('direct'));
+    upstream.forEach(n => els.get(n).classList.add('upstream'));
+
+    paths.forEach(({ from, to, kind, path }) => {
+      const onOrder = kind === 'order' && lit.has(from) && lit.has(to);
+      const onCoverage = kind === 'coverage' && (isFeature
+        ? to === id && direct.includes(from)
+        : from === id && direct.includes(to));
+      if (onOrder || onCoverage) path.classList.add('active');
+    });
+
+    renderStatus({ node, direct, upstream });
+  }
+
+  function renderStatus(state) {
+    statusEl.textContent = '';
+
+    if (!state) {
+      const hint = document.createElement('span');
+      hint.className = 'hint';
+      hint.textContent = 'Nothing selected. Click a feature for the tasks that complete it, or a task for what it waits on and what it feeds.';
+      statusEl.appendChild(hint);
+      return;
+    }
+
+    const { node, direct, upstream } = state;
+    const heading = document.createElement('span');
+    heading.className = 'ids';
+    heading.textContent = `${node.id} ${node.name}`;
+    statusEl.appendChild(heading);
+
+    if (node.kind === 'feature') {
+      statusEl.appendChild(field('Completed by', list(direct)));
+      statusEl.appendChild(field('Waits on', list(upstream, 'nothing further')));
+    } else {
+      statusEl.appendChild(field('Waits on', list(upstream, 'nothing')));
+      statusEl.appendChild(field('Unblocks', list(children.get(node.id), 'nothing')));
+      statusEl.appendChild(field('Covers', list(direct, 'no feature')));
+    }
+
+    const clear = document.createElement('button');
+    clear.type = 'button';
+    clear.textContent = 'Clear';
+    clear.addEventListener('click', () => select(null));
+    statusEl.appendChild(clear);
+  }
+
+  function field(label, value) {
+    const wrap = document.createElement('span');
+    const key = document.createElement('span');
+    key.className = 'label';
+    key.textContent = label + ' ';
+    const val = document.createElement('span');
+    val.className = 'ids';
+    val.textContent = value;
+    wrap.append(key, val);
+    return wrap;
+  }
+
+  function list(ids, empty) {
+    return ids.length ? [...ids].sort().join('  ') : empty;
+  }
+
+  function showTip(node, el) {
+    tipId.textContent = `${node.id} ${node.name}`;
+    tipDesc.textContent = node.desc;
+    tip.className = 'tip ' + node.kind;
+    tip.dataset.open = 'true';
+    tip.setAttribute('aria-hidden', 'false');
+
+    const anchor = el.getBoundingClientRect();
+    const box = tip.getBoundingClientRect();
+    const margin = 10;
+    let left = anchor.left + anchor.width / 2 - box.width / 2;
+    left = Math.max(margin, Math.min(left, window.innerWidth - box.width - margin));
+    let top = anchor.bottom + 10;
+    if (top + box.height > window.innerHeight - margin) top = anchor.top - box.height - 10;
+    tip.style.left = `${Math.round(left)}px`;
+    tip.style.top = `${Math.round(Math.max(margin, top))}px`;
+  }
+
+  function hideTip() {
+    tip.dataset.open = 'false';
+    tip.setAttribute('aria-hidden', 'true');
+  }
+
+  buildRows();
+  buildEdges();
+  drawEdges();
+  renderStatus(null);
+
+  board.addEventListener('click', () => select(null));
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') select(null);
+  });
+  new ResizeObserver(() => requestAnimationFrame(drawEdges)).observe(board);
+  window.addEventListener('resize', () => requestAnimationFrame(drawEdges));
+</script>
