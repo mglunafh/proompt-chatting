@@ -39,6 +39,6 @@
 ## Built without a dependency
 
 - **In-process connection registry** — a `ConcurrentHashMap` of live sessions for routing and fan-out; no Redis, no external message broker.
-- **In-memory ephemeral state** — presence is counted off the registry and the offline grace window is a coroutine `Job`; nothing ephemeral reaches Postgres ([04-user-presence.md](04-user-presence.md)).
+- **In-memory ephemeral state** — presence is counted off the registry and the offline grace window is a coroutine `Job`; nothing ephemeral reaches Postgres ([notes-user-presence.md](notes-user-presence.md)).
 - **Local filesystem for attachments** — no object storage, no CDN.
 - **Manual DI** (maybe Koin later) — wiring via a composition root at each entry point.

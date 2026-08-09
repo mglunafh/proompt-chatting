@@ -7,10 +7,10 @@ The client's SQLite store is a separate thing and stays in
 
 The inventory is below, and each table's block follows it.
 
-- **`users`** — accounts. Columns arrive from [03-authentication.md](03-authentication.md), [notes-roles.md](notes-roles.md), [notes-validation.md](notes-validation.md) and [04-user-presence.md](04-user-presence.md).
-- **`sessions`** — one row per login ([03-authentication.md](03-authentication.md)).
-- **`password_resets`** — admin-issued single-use reset tokens ([03-authentication.md](03-authentication.md)).
-- **`invites`** — registration tokens and the vouching chain ([02-registration.md](02-registration.md)).
+- **`users`** — accounts. Columns arrive from [notes-authentication.md](notes-authentication.md), [notes-roles.md](notes-roles.md), [notes-validation.md](notes-validation.md) and [notes-user-presence.md](notes-user-presence.md).
+- **`sessions`** — one row per login ([notes-authentication.md](notes-authentication.md)).
+- **`password_resets`** — admin-issued single-use reset tokens ([notes-authentication.md](notes-authentication.md)).
+- **`invites`** — registration tokens and the vouching chain ([notes-registration.md](notes-registration.md)).
 - **`totp_credentials`** — encrypted TOTP secrets ([notes-totp.md](notes-totp.md)).
 - **`recovery_codes`** — hashed single-use codes behind a lost device ([notes-totp.md](notes-totp.md)).
 - **`conversations`** — the one container behind direct messages, groups and channels ([notes-core-messaging.md](notes-core-messaging.md), [notes-community.md](notes-community.md)).
@@ -78,7 +78,7 @@ invites(
   token_hash,           -- store the hash, never the raw code
   issued_by,            -- vouching chain
   created_at,
-  expires_at,           -- TTL in days; ceiling in 02-registration.md
+  expires_at,           -- TTL in days; ceiling in notes-registration.md
   max_uses  default 1,  -- single-use by default; generalizes to N
   used_count default 0, -- the value the redeem races on
   revoked_at            -- nullable; presence = revoked

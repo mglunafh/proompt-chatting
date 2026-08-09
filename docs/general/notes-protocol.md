@@ -21,12 +21,12 @@ so both sides compile against one copy.
 - **Strictness is asymmetric** — the server rejects unknown keys, the client ignores them, so a newer server can add event fields without breaking older clients.
 - **Frame and body caps are enforced before deserialization** — the transport limits in [notes-validation.md](notes-validation.md), which are what bound the work an unparsed frame can cost.
 - **Errors are typed frames** — a rejected command says why and the connection survives. A breach of the interaction rate limit is one of them rather than a close, since closing turns a spamming client into a reconnect storm ([notes-rate-limiting.md](notes-rate-limiting.md)).
-- **A dropped frame is the third outcome** — a typing indicator arriving faster than its floor is discarded with no answer at all, neither accepted nor rejected, because the reply would cost more than the frame ([04-user-presence.md](04-user-presence.md)).
+- **A dropped frame is the third outcome** — a typing indicator arriving faster than its floor is discarded with no answer at all, neither accepted nor rejected, because the reply would cost more than the frame ([notes-user-presence.md](notes-user-presence.md)).
 - **Acks correlate by `client_msg_id`** — the send idempotency key doubles as the correlation key.
 
 ## After the upgrade
 
-- **The presence snapshot is the first frame the server sends** — captured by the same registry operation that adds the socket, so no delta can slip between the two ([04-user-presence.md](04-user-presence.md)).
+- **The presence snapshot is the first frame the server sends** — captured by the same registry operation that adds the socket, so no delta can slip between the two ([notes-user-presence.md](notes-user-presence.md)).
 - **The client resumes by presenting its sync cursor**, and pages anything above it before the live stream means anything.
 
 ## The heartbeat
@@ -39,5 +39,5 @@ so both sides compile against one copy.
 
 - **Reconnect is client-driven, with exponential backoff and jitter** — the server never invites a client back; a dropped socket is retried by the client, which resumes by presenting its sync cursor after the upgrade. Backoff with jitter is what keeps a server restart from returning as a reconnect stampede.
 - **Only an application close code stops the reconnect loop** — an unrecognized code, a missing one, an abnormal `1006` and a graceful `1001` all mean retry with backoff. A client halts only on a code it knows in the 4000–4999 range, so a newer server can introduce one without stranding an older client.
-- **Close codes mirror the upgrade's HTTP statuses** — `4401` for a session that is no longer valid, so the client discards its token and asks for credentials, and `4403` for a disabled account, where it discards the token and says so rather than prompting, since a password will not help. The upgrade rejects the same two cases as `401` and `403` ([03-authentication.md](03-authentication.md)), so a client too old to read the close code stops one reconnect later instead of looping.
+- **Close codes mirror the upgrade's HTTP statuses** — `4401` for a session that is no longer valid, so the client discards its token and asks for credentials, and `4403` for a disabled account, where it discards the token and says so rather than prompting, since a password will not help. The upgrade rejects the same two cases as `401` and `403` ([notes-authentication.md](notes-authentication.md)), so a client too old to read the close code stops one reconnect later instead of looping.
 - **`4409` session displaced** — another socket took over this session. Close-only, with no upgrade counterpart, because the displaced client's token is still valid: it stops, keeps the token, and offers a manual reconnect. Auto-retrying would evict the socket that just evicted it, and the two would trade places indefinitely.

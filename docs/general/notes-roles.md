@@ -21,18 +21,18 @@ can never be mistaken for the other.
 
 - **Admin** — promote and demote, issue password reset tokens, create server channels and post in them, issue invites unconditionally, plus everything below.
 - **Mod** — ban and unban, silence and unsilence server-wide or within a single public or server channel, moderate public channels and server channels.
-- **User** — no server-wide powers; issues invites only when `allow_user_invites` is on, per [02-registration.md](02-registration.md).
+- **User** — no server-wide powers; issues invites only when `allow_user_invites` is on, per [notes-registration.md](notes-registration.md).
 
 A ban is the same act as disabling an account: it sets the disabled flag, deletes
 the user's sessions, closes their sockets, and revokes their outstanding invites
-([02-registration.md](02-registration.md)). There is no second, admin-only
+([notes-registration.md](notes-registration.md)). There is no second, admin-only
 version of it — `disabled` is the column's name, not a separate power. A user
 retiring their own account takes the same path, differing only in the audit
 action it writes.
 
 `server_role` is read by joining `users` on the session lookup, so a REST request
 always sees the current one. A WebSocket authenticates once at upgrade, so the heartbeat
-re-check in [03-authentication.md](03-authentication.md) reads the role in the
+re-check in [notes-authentication.md](notes-authentication.md) reads the role in the
 same lookup it already makes for expiry and revocation, bounding a stale role to
 one tick.
 
@@ -48,8 +48,8 @@ one tick.
 ### Protections
 
 - **Nobody acts on an equal or higher role** — banning and demoting require the target's role to be strictly lower than the actor's, so a mod cannot ban a mod and no demotion war is possible. Reset issuance is exempt.
-- **A holder may always act on themselves** — how the bootstrap admin retires itself ([02-registration.md](02-registration.md)), with last-active-admin protection still catching the last one.
-- **The last active admin cannot be disabled, demoted or banned** — enforced server-side, per [02-registration.md](02-registration.md).
+- **A holder may always act on themselves** — how the bootstrap admin retires itself ([notes-registration.md](notes-registration.md)), with last-active-admin protection still catching the last one.
+- **The last active admin cannot be disabled, demoted or banned** — enforced server-side, per [notes-registration.md](notes-registration.md).
 - **Not extended to mods** — the server functions with none, so there is nothing to lock out.
 - **Removing a rogue admin takes the host** — no admin may demote or ban an equal. Admins run the box, so the admin-and-mod line is a security boundary and the admin-and-operator line is not.
 - **Every promotion and demotion is audited** — the same record the audit chain already keeps for admin creation.

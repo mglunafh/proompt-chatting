@@ -26,10 +26,10 @@ them.
 - **Messages in current state** — an edit overwrites the body and raises `change_seq` in place; never an event log.
 - **Reactions as their own rows** — mirroring `message_reactions` ([notes-db-schema.md](notes-db-schema.md)), so a reaction does not rewrite the message.
 - **Conversations and membership** — enough for the list, for group rosters, and for the mute level the badge filters on.
-- **Users, id to name** — messages carry immutable IDs and usernames are renameable, so this is required, not an optimization. Kept current by the profile event, and repaired from the snapshot for a client that was away ([04-user-presence.md](04-user-presence.md)).
+- **Users, id to name** — messages carry immutable IDs and usernames are renameable, so this is required, not an optimization. Kept current by the profile event, and repaired from the snapshot for a client that was away ([notes-user-presence.md](notes-user-presence.md)).
 - **The cursors** — one sync cursor per device, plus the read cursor per conversation as last seen from the server.
 - **The block list** — fetched at startup and on change, and held so the render filter works before that fetch returns ([notes-blocking.md](notes-blocking.md)).
-- **The session token** — the raw value, held nowhere else, since the server keeps only its hash ([03-authentication.md](03-authentication.md)). The one thing here that cannot be refetched, and the reason the file is `0600`.
+- **The session token** — the raw value, held nowhere else, since the server keeps only its hash ([notes-authentication.md](notes-authentication.md)). The one thing here that cannot be refetched, and the reason the file is `0600`.
 
 ## The two edges
 

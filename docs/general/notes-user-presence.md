@@ -3,7 +3,7 @@
 ## Presence model
 
 - **Per user, not per session** — an update names a user and a state, never which client or how many; `client_label` stays an authentication concern.
-- **Derived from the connection registry** — the registry in [03-authentication.md](03-authentication.md) is keyed by session and holds one socket each, so presence is the per-user count of live sockets: online at one or more, offline at zero. Counting sessions instead would give the same number.
+- **Derived from the connection registry** — the registry in [notes-authentication.md](notes-authentication.md) is keyed by session and holds one socket each, so presence is the per-user count of live sockets: online at one or more, offline at zero. Counting sessions instead would give the same number.
 - **Never persisted** — a restart starts everyone offline until they reconnect.
 - **Edge-triggered** — 0→1 emits online and 1→0 emits offline; session churn in between emits nothing, so opening a TUI beside a running console is silent.
 - **Revoke-closes are ordinary disconnects** — the socket closes on logout, ban and expiry decrement the count through the same path as any other drop, so no revoke path needs its own presence handling.

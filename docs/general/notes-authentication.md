@@ -46,7 +46,7 @@ multi-use machinery removed, in
 
 - **Admins issue, and only against a lower role** — a redeemed token makes the holder that user, so issuance sits with promotion and demotion under the rule that nobody acts on an equal or higher role ([notes-roles.md](notes-roles.md)).
 - **Hashed, high entropy, shown once** — a 256-bit random value stored as `hash(token)` and returned raw at issuance, never again, as with invites.
-- **Short TTL** — hours rather than the invite's days ([02-registration.md](02-registration.md)). A reset is handed over in a conversation already happening, so an unredeemed one should expire before anyone forgets it exists.
+- **Short TTL** — hours rather than the invite's days ([notes-registration.md](notes-registration.md)). A reset is handed over in a conversation already happening, so an unredeemed one should expire before anyone forgets it exists.
 - **A new token supersedes the outstanding one** — at most one live reset per user, so an admin reissuing after a failed hand-off does not leave two working tokens in circulation.
 - **Redeemed by the same atomic conditional update as an invite** — `UPDATE ... WHERE token_hash = ? AND used_at IS NULL AND expires_at > now()`, acting on rows-affected, so two redeemers cannot race and a spent token cannot be replayed.
 - **The new password is validated and hashed as on a change** — the same rules in [notes-validation.md](notes-validation.md), a new salt, and the cost the server is tuned to now.
@@ -68,6 +68,6 @@ multi-use machinery removed, in
 - **Idle timeout** — optionally reap sessions with no live socket, with a timeout measured in days rather than a short hard expiry. Example: log out a session after ~14 days with no activity. A connected session is demonstrably alive, so its idle clock starts when the socket drops.
 
 These map onto the `last_used_at` and `expires_at` columns in the sessions table.
-`last_used_at` has a second consumer: [04-user-presence.md](04-user-presence.md)
+`last_used_at` has a second consumer: [notes-user-presence.md](notes-user-presence.md)
 repairs last-seen from it at startup, which is what makes the heartbeat refresh
 worth its writes.

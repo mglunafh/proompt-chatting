@@ -77,7 +77,7 @@ Carried by group chats, channels and server channels alike, alongside the name.
 ### Session `client_label`
 
 A short tag the client sets at login, stored on the session row in
-[03-authentication.md](03-authentication.md). Multi-session means a user can hold
+[notes-authentication.md](notes-authentication.md). Multi-session means a user can hold
 several concurrent sessions, and the list-and-revoke flow needs something to tell
 them apart — without it the list is a set of rows differing only by timestamp.
 Typical values are `console`, `tui`, or something user-supplied like `work laptop`.
@@ -89,7 +89,7 @@ Typical values are `console`, `tui`, or something user-supplied like `work lapto
 - **ASCII letters, digits, spaces, and dashes only**
 - **Optional**; when absent the session is identified by the server-observed columns alone.
 - **Trimmed, with internal whitespace runs collapsed**, since spaces are permitted inside the value.
-- **Self-reported, so it is not evidence** — a stolen token used from an attacker's client sends whatever label that client chooses, including one imitating a legitimate session. The trustworthy columns in that view are the server-observed ones: `created_at`, `last_used_at` and `last_used_ip` ([03-authentication.md](03-authentication.md)).
+- **Self-reported, so it is not evidence** — a stolen token used from an attacker's client sends whatever label that client chooses, including one imitating a legitimate session. The trustworthy columns in that view are the server-observed ones: `created_at`, `last_used_at` and `last_used_ip` ([notes-authentication.md](notes-authentication.md)).
 
 ### Attachment filename
 

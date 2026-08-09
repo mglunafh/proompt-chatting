@@ -28,7 +28,7 @@ A separate table rather than columns on `users`, with the codes in a second one
 ([notes-db-schema.md](notes-db-schema.md)).
 
 - **Separate table** — 2FA is opt-in, so most users have no row rather than a table of nulls; the crypto blob stays out of the `users` row read on every request; and clearing 2FA (which an admin reset does) is a row delete.
-- **Recovery codes are hashed, not encrypted** — verify-only, so they follow the session-token pattern in [03-authentication.md](03-authentication.md): high-entropy random plus a fast hash, single-use.
+- **Recovery codes are hashed, not encrypted** — verify-only, so they follow the session-token pattern in [notes-authentication.md](notes-authentication.md): high-entropy random plus a fast hash, single-use.
 
 ## Best practices
 
@@ -58,7 +58,7 @@ A separate table rather than columns on `users`, with the codes in a second one
 - **Confirm before activating** — persist as pending, require one live code, then set `enabled_at`. Stops a mistyped secret becoming a lockout.
 - **Display once, never again** — no endpoint re-reveals the secret; re-enrollment mints a fresh one and invalidates the old.
 - **Re-authenticate for sensitive changes** — disabling 2FA, regenerating recovery codes, changing a password. Otherwise a stolen session strips the second factor silently.
-- **Audit every 2FA event** — enrollment, disable, recovery-code use. Most services also email the user; with no email in the model this collapses to the admin-visible audit chain from [02-registration.md](02-registration.md), which is weaker.
+- **Audit every 2FA event** — enrollment, disable, recovery-code use. Most services also email the user; with no email in the model this collapses to the admin-visible audit chain from [notes-registration.md](notes-registration.md), which is weaker.
 - **Keep the secret out of logs** — all container stdout ships to Loki, so a secret reaching a log line is stored a second time, unencrypted, under a different retention policy.
 
 ## Where production has moved

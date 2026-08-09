@@ -24,7 +24,7 @@ Best practices and invariants:
 ## Leaving
 
 - **A user retires their own account** — the same row change a ban makes: `disabled` set, sessions deleted, live sockets closed and outstanding invites revoked, through the one path in [notes-roles.md](notes-roles.md) rather than a second one.
-- **Confirmed with the current password** — the guard a password change already takes ([03-authentication.md](03-authentication.md)), since a borrowed terminal is otherwise one call from retiring the account.
+- **Confirmed with the current password** — the guard a password change already takes ([notes-authentication.md](notes-authentication.md)), since a borrowed terminal is otherwise one call from retiring the account.
 - **Audited as its own action** — a retirement and a ban write different actions, so the record distinguishes leaving from being removed.
 - **Nothing of theirs is removed** — messages, memberships and the vouching chain survive per disable-don't-delete above, and an admin re-enables the account, which is what makes it retirement rather than deletion.
 
