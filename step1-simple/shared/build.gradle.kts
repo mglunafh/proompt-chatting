@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.serialization)
     `java-library`
+    alias(libs.plugins.ktlint)
 }
 
 dependencies {
@@ -11,4 +12,8 @@ dependencies {
     testImplementation(platform(libs.bom.junit))
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.platform.launcher)
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
