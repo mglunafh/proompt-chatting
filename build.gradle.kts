@@ -1,9 +1,15 @@
 plugins {
     alias(libs.plugins.kotlin.jvm) apply false
+    alias(libs.plugins.kotlin.serialization) apply false
+    alias(libs.plugins.ktlint) apply false
 }
 
 subprojects {
     repositories {
         mavenCentral()
+    }
+
+    tasks.withType<Test>().configureEach {
+        useJUnitPlatform()
     }
 }
