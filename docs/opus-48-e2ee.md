@@ -313,8 +313,10 @@ once against the interface and never against a concrete engine — see
 - **`:protocol`** — envelope DTOs (routing metadata + ciphertext + prekey types),
   shared by server and every client.
 - **`:client:api`** — the `ChatEngine` interface plus the domain model
-  (`Message`, `ChatEvent`, ids). No implementation, no dependencies beyond
-  coroutines. Inbound events are a `Flow` of *already-decrypted* domain objects;
+  (`Message`, `ChatEvent`, ids). `ChatEvent` is the engine's own domain event,
+  one layer above the wire and not a server frame. No implementation, no
+  dependencies beyond coroutines. Inbound events are a `Flow` of
+  *already-decrypted* domain objects;
   outbound actions are suspend functions. Two members exist for this variant that
   a plaintext engine leaves null: contact verification (E-57/E-58) and the
   keystore passphrase unlock.

@@ -57,7 +57,8 @@ include(
 ## The engine interface
 
 `:client:api` holds the interface and the domain model — no implementation, no
-dependencies beyond coroutines.
+dependencies beyond coroutines. `ChatEvent` is the engine's own domain event,
+one layer above the wire and not a server frame.
 
 ```kotlin
 interface ChatEngine {
