@@ -273,9 +273,10 @@ once against the interface and never against a concrete engine:
 
 - **`:protocol`** — message DTOs, shared by server and every client.
 - **`:client:api`** — the `ChatEngine` interface plus the domain model
-  (`Message`, `ChatEvent`, ids). No implementation, no dependencies beyond
-  coroutines. Inbound events are a `Flow`; outbound actions are suspend
-  functions.
+  (`Message`, `ChatEvent`, ids). `ChatEvent` is the engine's own domain event,
+  one layer above the wire and not a server frame. No implementation, no
+  dependencies beyond coroutines. Inbound events are a `Flow`; outbound actions
+  are suspend functions.
 - **`:client:core-plain`** — the implementation: Ktor WebSocket connection,
   reconnect/backoff/heartbeat, auth/session, token persistence, and local state
   (last-seen `seq` per conversation, unread counts, current-conversation
