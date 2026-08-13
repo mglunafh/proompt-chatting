@@ -91,7 +91,7 @@ demotes ordinary members only, and acting on an officer takes the owner.
 - **Archived rather than deleted** — setting `archived_at` makes a conversation read-only, keeps its history for the members who were in it, and takes it out of the active list. Nothing is destroyed, matching disable-don't-delete for accounts and the tombstone a deleted message leaves.
 - **The owner archives and unarchives** — and for a server channel, which carries no conversation role, an admin does both.
 - **Read-only covers the message stream, not `archived_at` itself** — otherwise archiving would be one-way and nothing could bring the conversation back.
-- **The change rides the conversation metadata event** — members learn at once rather than keeping a composer over a conversation that no longer takes messages ([notes-core-messaging.md](notes-core-messaging.md)).
+- **The change rides the conversation metadata frame** — members learn at once rather than keeping a composer over a conversation that no longer takes messages ([notes-core-messaging.md](notes-core-messaging.md)).
 
 ### Audit
 

@@ -28,7 +28,7 @@ Alongside it sits a denormalized `blocked` column on `conversation_members`.
 - **`DELETE /blocks/{user_id}`** — idempotent likewise.
 
 All three act on the caller's own rows only. None of them emits anything to the
-blocked user: no event, no notification, no change to what they can read.
+blocked user: no frame, no notification, no change to what they can read.
 
 ## Blocking, in order
 

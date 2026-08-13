@@ -16,11 +16,11 @@ so both sides compile against one copy.
 ## Framing
 
 - **Frames are sealed hierarchies with a `type` discriminator** — kotlinx.serialization polymorphism, in the shared protocol module compiled into both server and client.
-- **Commands and events are separate hierarchies** — client→server and server→client, so a client cannot construct a server-only frame.
+- **Client frames and server frames are separate hierarchies** — client→server and server→client.
 - **Version is checked once at the WebSocket upgrade** — a mismatch is rejected there, not carried on every frame.
-- **Strictness is asymmetric** — the server rejects unknown keys, the client ignores them, so a newer server can add event fields without breaking older clients.
+- **Strictness is asymmetric** — the server rejects unknown keys, the client ignores them, so a newer server can add server frame fields without breaking older clients.
 - **Frame and body caps are enforced before deserialization** — the transport limits in [notes-validation.md](notes-validation.md), which are what bound the work an unparsed frame can cost.
-- **Errors are typed frames** — a rejected command says why and the connection survives. A breach of the interaction rate limit is one of them rather than a close, since closing turns a spamming client into a reconnect storm ([notes-rate-limiting.md](notes-rate-limiting.md)).
+- **Errors are typed frames** — a rejected client frame says why and the connection survives. A breach of the interaction rate limit is one of them rather than a close, since closing turns a spamming client into a reconnect storm ([notes-rate-limiting.md](notes-rate-limiting.md)).
 - **A dropped frame is the third outcome** — a typing indicator arriving faster than its floor is discarded with no answer at all, neither accepted nor rejected, because the reply would cost more than the frame ([notes-user-presence.md](notes-user-presence.md)).
 - **Acks correlate by `client_msg_id`** — the send idempotency key doubles as the correlation key.
 

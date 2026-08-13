@@ -20,11 +20,11 @@ Everything else is the same call from the UI's point of view.
 ## Things that could be done
 
 - **Engine interface module** — one interface plus the domain model it exposes
-  (event stream, send, login, history paging), in its own module with no
-  transport, crypto or UI dependencies. Frontends depend on it and nothing else;
-  each variant supplies an implementation. Costs one file today and is the item
-  with the worst reversal cost, since retrofitting it means touching every
-  frontend already written.
+  (a stream of domain events one layer above the wire, send, login, history
+  paging), in its own module with no transport, crypto or UI dependencies.
+  Frontends depend on it and nothing else; each variant supplies an
+  implementation. Costs one file today and is the item with the worst reversal
+  cost, since retrofitting it means touching every frontend already written.
 - **Fake engine emitting scripted events** — ships alongside the interface. Lets
   frontend work start with no server running and makes frontend tests
   independent of transport.

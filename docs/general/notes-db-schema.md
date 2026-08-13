@@ -160,7 +160,7 @@ conversation_restrictions(
 messages(
   id,                 -- bigserial; fixes display order and is the key scrollback pages against
   conversation_id,
-  sender_id,          -- not null; server notices ride typed events instead of sender-less rows
+  sender_id,          -- not null; server notices ride typed frames instead of sender-less rows
   body,               -- cleared on delete, the row surviving as a tombstone
   created_at,         -- server-assigned at insert, so a sender cannot backdate
   edited_at,          -- nullable; presence = edited

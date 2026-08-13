@@ -22,7 +22,7 @@ the layer that reads it.
 - **Comments never count** — in a channel the aggregate carries a `parent_post_id IS NULL` predicate, so only posts raise the number ([notes-community.md](notes-community.md)). A comment addressed to a member reaches them through the mention tally instead.
 - **The conversation list returns the count** — computed at query time, one aggregate per conversation against the caller's cursor. This is the call a fresh client makes at startup, so an empty cache still shows correct numbers.
 - **No counter column** — nothing is maintained on the send path. A denormalized counter costs a write per member per message, goes wrong on deletion, and needs a backfill whenever membership changes.
-- **The client recounts between fetches** — on an incoming message and on a cursor advance, by counting rows in its cache under the same predicates rather than incrementing. Incrementing from events double-counts a message that also arrives through catch-up.
+- **The client recounts between fetches** — on an incoming message and on a cursor advance, by counting rows in its cache under the same predicates rather than incrementing. Incrementing from frames double-counts a message that also arrives through catch-up.
 - **The badge counts conversations, not messages** — the number of conversations holding anything unread. Summing the per-conversation counts produces a large number that says nothing about what to do next.
 - **Mentions are tallied apart** — folded into the unread count, a mention among a few hundred channel messages is invisible, which is the case the tally exists for.
 
