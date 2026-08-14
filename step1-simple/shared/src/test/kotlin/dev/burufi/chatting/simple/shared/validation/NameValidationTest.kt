@@ -1,8 +1,8 @@
 package dev.burufi.chatting.simple.shared.validation
 
+import dev.burufi.chatting.simple.shared.ClientName
 import dev.burufi.chatting.simple.shared.ErrorCode
 import dev.burufi.chatting.simple.shared.Validated
-import dev.burufi.chatting.simple.shared.Validation
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -16,23 +16,25 @@ class NameValidationTest {
     @ParameterizedTest
     @MethodSource("accepted")
     fun `an accepted name comes back unchanged`(raw: String) {
-        assertEquals(Validated.Valid(raw), Validation.validateName(raw))
+        val result = ClientName.of(raw)
+        assertTrue(result is Validated.Valid, "the name was refused")
+        assertEquals(raw, (result as Validated.Valid).value.value)
     }
 
     @ParameterizedTest
     @MethodSource("rejected")
     fun `a refused name is refused as invalid`(raw: String) {
-        val result = Validation.validateName(raw)
+        val result = ClientName.of(raw)
         assertTrue(result is Validated.Invalid, "the name was accepted")
         assertEquals(ErrorCode.INVALID_NAME, (result as Validated.Invalid).code)
     }
 
     @Test
     fun `every reserved name would otherwise pass, and is refused anyway`() {
-        val pattern = Regex(Validation.NAME_PATTERN)
-        Validation.RESERVED_NAMES.forEach { name ->
+        val pattern = Regex(ClientName.PATTERN)
+        ClientName.RESERVED.forEach { name ->
             assertTrue(pattern.matches(name), "$name does not reach the reserved check")
-            val result = Validation.validateName(name)
+            val result = ClientName.of(name)
             assertTrue(result is Validated.Invalid, "$name was accepted")
             assertEquals(ErrorCode.INVALID_NAME, (result as Validated.Invalid).code)
             assertTrue(result.reason.contains("reserved"), result.reason)
@@ -41,7 +43,7 @@ class NameValidationTest {
 
     @Test
     fun `a refusal never quotes a name that failed the pattern`() {
-        val result = Validation.validateName("ali${ESC}ce") as Validated.Invalid
+        val result = ClientName.of("ali${ESC}ce") as Validated.Invalid
         assertFalse(result.reason.contains(ESC), "the reason carries the escape itself: ${result.reason}")
     }
 
@@ -49,7 +51,7 @@ class NameValidationTest {
     fun `the pattern holds its documented form`() {
         // The one copy the client, the server and a later database constraint share.
         val documented = "^(?=[a-z0-9_-]{3,32}" + DOLLAR + ")[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*" + DOLLAR
-        assertEquals(documented, Validation.NAME_PATTERN)
+        assertEquals(documented, ClientName.PATTERN)
     }
 
     companion object {

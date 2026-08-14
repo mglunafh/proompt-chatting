@@ -13,62 +13,13 @@ sealed interface Validated<out T> {
 }
 
 /**
- * The rules a message body and a connect name are held to, as pure functions.
+ * The rules a message body is held to, as pure functions. The name rules live on
+ * [ClientName], which is the only thing that can vouch for one.
  */
 object Validation {
-    /**
-     * The shape of a connect name. Length is carried by the leading lookahead,
-     * so shape and length stay one pattern with no second rule to keep in step.
-     *
-     * Lowercase ASCII only, starting with a letter, with single `_` or `-`
-     * separators between runs and none at either end.
-     */
-    const val NAME_PATTERN: String = "^(?=[a-z0-9_-]{3,32}\$)[a-z][a-z0-9]*(?:[_-][a-z0-9]+)*\$"
-
-    /**
-     * Names that would read as the server itself, or as an address, if a client
-     * could connect under them.
-     */
-    val RESERVED_NAMES: Set<String> =
-        setOf(
-            "admin",
-            "system",
-            "server",
-            "root",
-            "mod",
-            "moderator",
-            "support",
-            "everyone",
-            "here",
-            "bot",
-            "invite",
-            "health",
-            "metrics",
-            "api",
-            "attachments",
-            "blocks",
-            "bookmarks",
-        )
-
-    private val NAME_REGEX = Regex(NAME_PATTERN)
-
     /** The two control characters a body may carry. */
     private const val TAB = '\t'
     private const val NEWLINE = '\n'
-
-    /** Validate the name. */
-    fun validateName(raw: String): Validated<String> {
-        if (!NAME_REGEX.matches(raw)) {
-            return Validated.Invalid(
-                ErrorCode.INVALID_NAME,
-                "a name is 3 to 32 characters of lowercase letters, digits and single separators, starting with a letter",
-            )
-        }
-        if (raw in RESERVED_NAMES) {
-            return Validated.Invalid(ErrorCode.INVALID_NAME, "'$raw' is reserved")
-        }
-        return Validated.Valid(raw)
-    }
 
     /**
      * Normalize a body and refuse it if it breaks a rule, reporting the first
