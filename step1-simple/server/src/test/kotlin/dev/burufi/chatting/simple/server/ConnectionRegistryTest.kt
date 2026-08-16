@@ -1,13 +1,13 @@
 package dev.burufi.chatting.simple.server
 
 import dev.burufi.chatting.simple.shared.ClientName
+import dev.burufi.chatting.simple.shared.ServerFrame
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -19,8 +19,9 @@ class ConnectionRegistryTest {
     @Test
     fun `the first client in sees an empty roster`() =
         runBlocking {
-            val admitted = registry.register(RecordingConnection("alice")) as Registration.Admitted
-            assertEquals(emptyList<ClientName>(), admitted.roster)
+            val alice = RecordingConnection("alice")
+            val admitted = registry.register(alice) as Registration.Admitted
+            assertEquals(emptyList<String>(), alice.roster())
             assertEquals(emptyList<ClientConnection>(), admitted.others)
         }
 
@@ -28,16 +29,18 @@ class ConnectionRegistryTest {
     fun `a later client sees who is already connected, and not itself`() =
         runBlocking {
             registry.register(RecordingConnection("alice"))
-            val admitted = registry.register(RecordingConnection("bob")) as Registration.Admitted
-            assertEquals(listOf(clientName("alice")), admitted.roster)
+            val bob = RecordingConnection("bob")
+            registry.register(bob)
+            assertEquals(listOf("alice"), bob.roster())
         }
 
     @Test
     fun `the roster is sorted whatever order clients connected in`() =
         runBlocking {
             listOf("carol", "alice", "bob").forEach { registry.register(RecordingConnection(it)) }
-            val admitted = registry.register(RecordingConnection("dave")) as Registration.Admitted
-            assertEquals(names("alice", "bob", "carol"), admitted.roster)
+            val dave = RecordingConnection("dave")
+            registry.register(dave)
+            assertEquals(listOf("alice", "bob", "carol"), dave.roster())
         }
 
     @Test
@@ -48,9 +51,10 @@ class ConnectionRegistryTest {
             registry.register(alice)
             registry.register(bob)
 
-            val admitted = registry.register(RecordingConnection("carol")) as Registration.Admitted
+            val carol = RecordingConnection("carol")
+            val admitted = registry.register(carol) as Registration.Admitted
             assertEquals(listOf(alice, bob), admitted.others)
-            assertEquals(admitted.others.map { it.name }, admitted.roster)
+            assertEquals(admitted.others.map { it.name.value }, carol.roster())
         }
 
     @Test
@@ -70,7 +74,7 @@ class ConnectionRegistryTest {
             val alice = RecordingConnection("alice")
             registry.register(alice)
 
-            assertTrue(registry.unregister(alice), "the connected client was not removed")
+            assertTrue(registry.unregister(alice) is Departure.Removed, "the connected client was not removed")
             assertEquals(emptyList<ClientName>(), registry.names())
             assertTrue(registry.register(RecordingConnection("alice")) is Registration.Admitted)
         }
@@ -81,8 +85,20 @@ class ConnectionRegistryTest {
             val alice = RecordingConnection("alice")
             registry.register(alice)
 
-            assertTrue(registry.unregister(alice))
-            assertFalse(registry.unregister(alice), "the same connection was removed twice")
+            assertTrue(registry.unregister(alice) is Departure.Removed)
+            assertEquals(Departure.NotConnected, registry.unregister(alice), "the same connection was removed twice")
+        }
+
+    @Test
+    fun `unregister reports who is left to tell`() =
+        runBlocking {
+            val alice = RecordingConnection("alice")
+            val bob = RecordingConnection("bob")
+            val carol = RecordingConnection("carol")
+            listOf(carol, alice, bob).forEach { registry.register(it) }
+
+            val departure = registry.unregister(bob) as Departure.Removed
+            assertEquals(listOf(alice, carol), departure.remaining, "the leaver is not told about itself")
         }
 
     @Test
@@ -94,7 +110,7 @@ class ConnectionRegistryTest {
             registry.unregister(first)
             registry.register(second)
 
-            assertFalse(registry.unregister(first), "a dead connection evicted a live one")
+            assertEquals(Departure.NotConnected, registry.unregister(first), "a dead connection evicted a live one")
             assertSame(second, registry.lookup(clientName("alice")))
         }
 
@@ -106,7 +122,7 @@ class ConnectionRegistryTest {
         }
 
     @Test
-    fun `the registry sends nothing of its own`() =
+    fun `the registry sends the roster and nothing else`() =
         runBlocking {
             val alice = RecordingConnection("alice")
             val bob = RecordingConnection("bob")
@@ -114,9 +130,8 @@ class ConnectionRegistryTest {
             registry.register(bob)
             registry.unregister(bob)
 
-            // The frames a join and a leave cause are the fan-out's, not the registry's.
-            assertEquals(emptyList<Any>(), alice.frames())
-            assertEquals(emptyList<Any>(), bob.frames())
+            assertEquals(listOf(ServerFrame.Roster(emptyList())), alice.frames(), "the registry must not send joins or leaves")
+            assertEquals(listOf(ServerFrame.Roster(listOf("alice"))), bob.frames(), "unregister must not send anything")
         }
 
     @Test
@@ -149,14 +164,14 @@ class ConnectionRegistryTest {
             val rosters =
                 outcomes.associate { (connection, outcome) ->
                     assertTrue(outcome is Registration.Admitted, "$connection was refused a free name")
-                    connection.name to (outcome as Registration.Admitted).roster.toSet()
+                    connection.name to connection.roster().toSet()
                 }
             assertEquals(RACERS, registry.names().size)
 
             racers.forEachIndexed { index, a ->
                 racers.drop(index + 1).forEach { b ->
-                    val aSawB = b.name in rosters.getValue(a.name)
-                    val bSawA = a.name in rosters.getValue(b.name)
+                    val aSawB = b.name.value in rosters.getValue(a.name)
+                    val bSawA = a.name.value in rosters.getValue(b.name)
                     assertTrue(aSawB != bSawA, "$a and $b did not register one after the other")
                 }
             }
@@ -171,7 +186,7 @@ class ConnectionRegistryTest {
             val outcomes =
                 race(racers) { racer ->
                     val outcome = registry.register(racer)
-                    outcome is Registration.Admitted && registry.unregister(racer)
+                    outcome is Registration.Admitted && registry.unregister(racer) is Departure.Removed
                 }
 
             assertTrue(outcomes.any { (_, removed) -> removed }, "nobody ever got in")
