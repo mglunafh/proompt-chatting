@@ -1,7 +1,9 @@
 package dev.burufi.chatting.simple.server
 
+import dev.burufi.chatting.simple.shared.ClientFrame
 import dev.burufi.chatting.simple.shared.Endpoint
 import dev.burufi.chatting.simple.shared.ErrorCode
+import dev.burufi.chatting.simple.shared.Limits
 import dev.burufi.chatting.simple.shared.ProtocolJson
 import dev.burufi.chatting.simple.shared.ServerFrame
 import io.ktor.client.HttpClient
@@ -171,6 +173,109 @@ class ChatEndpointTest {
         }
 
     @Test
+    fun `a message reaches the recipient and comes back to the sender`() =
+        chat { client ->
+            val alice = client.join("alice")
+            alice.expectRoster()
+
+            val bob = client.join("bob")
+            bob.expectRoster("alice")
+            alice.expectFrame(ServerFrame.UserJoined("bob"))
+
+            alice.sendTo("bob", "hi")
+            val message = ServerFrame.Message("alice", "bob", "hi")
+            bob.expectFrame(message)
+            alice.expectFrame(message)
+        }
+
+    @Test
+    fun `a message goes to its recipient and to nobody else`() =
+        chat { client ->
+            val alice = client.join("alice")
+            alice.expectRoster()
+
+            val bob = client.join("bob")
+            bob.expectRoster("alice")
+
+            val carol = client.join("carol")
+            carol.expectRoster("alice", "bob")
+            bob.expectFrame(ServerFrame.UserJoined("carol"))
+
+            alice.sendTo("bob", "hi")
+            bob.expectFrame(ServerFrame.Message("alice", "bob", "hi"))
+            carol.expectSilence()
+        }
+
+    @Test
+    fun `a send to oneself arrives once`() =
+        chat { client ->
+            client.webSocket(url("alice")) {
+                expectRoster()
+                sendTo("alice", "note")
+
+                // Delivery and echo are the same client here, and comparing `from` with
+                // its own name cannot tell them apart.
+                expectFrame(ServerFrame.Message("alice", "alice", "note"))
+                expectSilence()
+            }
+        }
+
+    @Test
+    fun `a recipient that never connected is refused`() =
+        chat { client ->
+            client.webSocket(url("alice")) {
+                expectRoster()
+                sendTo("dave", "hi")
+                expectError(ErrorCode.UNKNOWN_RECIPIENT)
+
+                // A second refusal is what proves the first was not a close.
+                sendTo("dave", "hi")
+                expectError(ErrorCode.UNKNOWN_RECIPIENT)
+            }
+        }
+
+    @Test
+    fun `a recipient that has left is refused`() =
+        chat { client ->
+            val alice = client.join("alice")
+            alice.expectRoster()
+
+            val bob = client.join("bob")
+            bob.expectRoster("alice")
+            alice.expectFrame(ServerFrame.UserJoined("bob"))
+
+            // Waiting on the leave is what makes this the departed case rather than a
+            // race against cleanup.
+            bob.close()
+            alice.expectFrame(ServerFrame.UserLeft("bob"))
+
+            alice.sendTo("bob", "hi")
+            alice.expectError(ErrorCode.UNKNOWN_RECIPIENT)
+        }
+
+    @Test
+    fun `a body that breaks a rule is refused and the connection survives`() =
+        chat { client ->
+            val alice = client.join("alice")
+            alice.expectRoster()
+
+            val bob = client.join("bob")
+            bob.expectRoster("alice")
+            alice.expectFrame(ServerFrame.UserJoined("bob"))
+
+            alice.sendTo("bob", "a".repeat(Limits.MAX_BODY_BYTES + 1))
+            alice.expectError(ErrorCode.BODY_TOO_LARGE)
+
+            alice.sendTo("bob", "clear$ESC[2J")
+            alice.expectError(ErrorCode.BODY_INVALID_CHARACTERS)
+
+            // Bob's first frame being the third send is what proves the refused two were
+            // answered rather than delivered, and that neither closed anything.
+            alice.sendTo("bob", "hi")
+            bob.expectFrame(ServerFrame.Message("alice", "bob", "hi"))
+        }
+
+    @Test
     fun `Sanity check - no delta ever arrives before the roster`() =
         chat { client ->
             repeat(ROUNDS) { round ->
@@ -253,6 +358,11 @@ class ChatEndpointTest {
     /** A connection that stays open, so several clients can watch each other. */
     private suspend fun HttpClient.join(name: String): DefaultClientWebSocketSession = webSocketSession(url(name))
 
+    private suspend fun WebSocketSession.sendTo(
+        to: String,
+        body: String,
+    ) = send(Frame.Text(ProtocolJson.STRICT.encodeToString(ProtocolJson.CLIENT_FRAME, ClientFrame.Send(to, body))))
+
     private suspend fun WebSocketSession.nextFrame(): ServerFrame {
         val frame = withTimeout(BUDGET) { incoming.receive() }
         assertTrue(frame is Frame.Text, "expected a text frame, got $frame")
@@ -281,6 +391,8 @@ class ChatEndpointTest {
     }
 
     private companion object {
+        val ESC = Char(0x1B)
+
         /** Generous: it exists to fail a hung test rather than to time anything. */
         val BUDGET = 5.seconds
 

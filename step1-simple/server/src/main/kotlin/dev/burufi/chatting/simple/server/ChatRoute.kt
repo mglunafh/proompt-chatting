@@ -24,6 +24,8 @@ import kotlinx.serialization.SerializationException
  * length of its stay, or is told why it may not.
  */
 fun Route.chatRoute(registry: ConnectionRegistry) {
+    val router = MessageRouter(registry)
+
     webSocket(Endpoint.PATH) {
         val name = admit() ?: return@webSocket
         val connection = SocketConnection(name, this)
@@ -36,7 +38,7 @@ fun Route.chatRoute(registry: ConnectionRegistry) {
                 val writer = launch { connection.writeLoop() }
                 try {
                     registration.others.broadcast(ServerFrame.UserJoined(name.value))
-                    readLoop(connection)
+                    readLoop(connection, router)
                 } finally {
                     // Shielded because the writer is a child of this scope: a write
                     // loop that fails cancels the scope its own cleanup runs in,
@@ -87,7 +89,10 @@ private suspend fun DefaultWebSocketServerSession.admit(): ClientName? {
  * A frame that does not decode is answered and the connection survives it, which is
  * what makes a refusal a frame rather than a close.
  */
-private suspend fun DefaultWebSocketServerSession.readLoop(connection: SocketConnection) {
+private suspend fun DefaultWebSocketServerSession.readLoop(
+    connection: SocketConnection,
+    router: MessageRouter,
+) {
     for (frame in incoming) {
         // Binary is not this wire, and ping, pong and close never reach here.
         val text = (frame as? Frame.Text)?.readText() ?: continue
@@ -101,8 +106,7 @@ private suspend fun DefaultWebSocketServerSession.readLoop(connection: SocketCon
             }
 
         when (clientFrame) {
-            // W-07 validates the body and writes the message to the recipient and back.
-            is ClientFrame.Send -> Unit
+            is ClientFrame.Send -> router.route(connection, clientFrame)
         }
     }
 }
