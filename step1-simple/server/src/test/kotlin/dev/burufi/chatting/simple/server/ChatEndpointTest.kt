@@ -14,9 +14,12 @@ import io.ktor.server.testing.testApplication
 import io.ktor.websocket.CloseReason
 import io.ktor.websocket.Frame
 import io.ktor.websocket.WebSocketSession
+import io.ktor.websocket.close
 import io.ktor.websocket.readText
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -60,50 +63,138 @@ class ChatEndpointTest {
         }
 
     @Test
-    fun `an admitted client is answered with nothing at all`() =
+    fun `the first frame after the upgrade is the roster`() =
         chat { client ->
-            // The roster is the first frame the server sends, and it arrives in W-06.
-            // Until then admission is silence, and this is what would catch a stray
-            // frame slipping in ahead of it.
-            client.webSocket(url("alice")) { expectSilence() }
+            client.webSocket(url("alice")) { expectRoster() }
+        }
+
+    @Test
+    fun `a later client's roster names who is already here, sorted`() =
+        chat { client ->
+            val carol = client.join("carol")
+            carol.expectRoster()
+            client.join("alice").expectRoster("carol")
+            client.join("bob").expectRoster("alice", "carol")
+            client.join("dave").expectRoster("alice", "bob", "carol")
+        }
+
+    @Test
+    fun `a join reaches everyone already here`() =
+        chat { client ->
+            val alice = client.join("alice")
+            alice.expectRoster()
+
+            client.join("bob").expectRoster("alice")
+            alice.expectFrame(ServerFrame.UserJoined("bob"))
+        }
+
+    @Test
+    fun `a client is not told about its own join`() =
+        chat { client ->
+            client.join("alice").expectRoster()
+
+            val bob = client.join("bob")
+            bob.expectRoster("alice")
+            bob.expectSilence()
+        }
+
+    @Test
+    fun `a leave reaches everyone still here`() =
+        chat { client ->
+            val alice = client.join("alice")
+            alice.expectRoster()
+
+            val bob = client.join("bob")
+            bob.expectRoster("alice")
+            alice.expectFrame(ServerFrame.UserJoined("bob"))
+
+            bob.close()
+            alice.expectFrame(ServerFrame.UserLeft("bob"))
         }
 
     @Test
     fun `a name already connected is refused`() =
         chat { client ->
+            client.join("alice").expectRoster()
+
             client.webSocket(url("alice")) {
-                // The only proof from out here that the first client was registered.
-                client.webSocket(url("alice")) {
-                    expectError(ErrorCode.NAME_TAKEN)
-                    expectClosed()
-                }
+                expectError(ErrorCode.NAME_TAKEN)
+                expectClosed()
             }
+        }
+
+    @Test
+    fun `a refused duplicate is announced to nobody`() =
+        chat { client ->
+            val alice = client.join("alice")
+            alice.expectRoster()
+
+            client.webSocket(url("alice")) { expectError(ErrorCode.NAME_TAKEN) }
+            alice.expectSilence()
         }
 
     @Test
     fun `a name is free again once its client leaves`() =
         chat { client ->
-            client.webSocket(url("alice")) { expectSilence() }
-            assertTrue(client.awaitAdmitted("alice"), "the name was never released")
+            val alice = client.join("alice")
+            alice.expectRoster()
+
+            val bob = client.join("bob")
+            bob.expectRoster("alice")
+            alice.expectFrame(ServerFrame.UserJoined("bob"))
+
+            // Alice seeing the leave is the server saying the unregister is done, which
+            // is what makes reclaiming the name deterministic rather than a race
+            // against cleanup.
+            bob.close()
+            alice.expectFrame(ServerFrame.UserLeft("bob"))
+
+            client.join("bob").expectRoster("alice")
         }
 
     @Test
     fun `a client that drops without closing still frees its name`() =
         chat { client ->
-            val session = client.webSocketSession(url("alice"))
-            session.expectSilence()
+            val alice = client.join("alice")
+            alice.expectRoster()
+
+            val bob = client.join("bob")
+            bob.expectRoster("alice")
+            alice.expectFrame(ServerFrame.UserJoined("bob"))
 
             // No close handshake: the socket dies rather than being shut down
             // politely, which is what a killed terminal looks like from here.
-            session.cancel()
+            bob.cancel()
+            alice.expectFrame(ServerFrame.UserLeft("bob"))
 
-            assertTrue(client.awaitAdmitted("alice"), "a dropped client kept its name")
+            client.join("bob").expectRoster("alice")
+        }
+
+    @Test
+    fun `Sanity check - no delta ever arrives before the roster`() =
+        chat { client ->
+            repeat(ROUNDS) { round ->
+                coroutineScope {
+                    val firsts =
+                        (0 until RACERS)
+                            .map { racer ->
+                                async {
+                                    var first: ServerFrame? = null
+                                    client.webSocket(url("r${round}x$racer")) { first = nextFrame() }
+                                    first
+                                }
+                            }.awaitAll()
+
+                    firsts.forEach { assertTrue(it is ServerFrame.Roster, "first frame was $it, not a roster") }
+                }
+            }
         }
 
     @Test
     fun `a frame that does not decode is refused and the connection survives`() =
         chat { client ->
             client.webSocket(url("alice")) {
+                expectRoster()
                 send(Frame.Text("not json at all"))
                 expectError(ErrorCode.MALFORMED_FRAME)
 
@@ -117,6 +208,7 @@ class ChatEndpointTest {
     fun `an unknown key is refused rather than dropped`() =
         chat { client ->
             client.webSocket(url("alice")) {
+                expectRoster()
                 send(Frame.Text("""{"type":"send","to":"bob","body":"hi","extra":1}"""))
                 expectError(ErrorCode.MALFORMED_FRAME)
             }
@@ -126,6 +218,7 @@ class ChatEndpointTest {
     fun `a refusal does not quote the frame it refused`() =
         chat { client ->
             client.webSocket(url("alice")) {
+                expectRoster()
                 send(Frame.Text("""{"type":"send","to":"bob","body":"hi","telltale":1}"""))
                 val error = expectError(ErrorCode.MALFORMED_FRAME)
 
@@ -139,6 +232,7 @@ class ChatEndpointTest {
     fun `a binary frame is ignored`() =
         chat { client ->
             client.webSocket(url("alice")) {
+                expectRoster()
                 send(Frame.Binary(true, byteArrayOf(1, 2, 3)))
 
                 // The loop answering this is what proves the binary frame did not end it.
@@ -156,30 +250,18 @@ class ChatEndpointTest {
 
     private fun url(name: String): String = "${Endpoint.PATH}?${Endpoint.NAME_PARAM}=$name"
 
-    /**
-     * Connect as [name], retrying while the server still holds it.
-     *
-     * A departure is not synchronous with the socket ending: the server notices when
-     * its read loop does. W-06's leave broadcast is what will make the moment
-     * observable and let this stop being a retry.
-     */
-    private suspend fun HttpClient.awaitAdmitted(name: String): Boolean {
-        repeat(ATTEMPTS) {
-            var admitted = false
-            webSocket(url(name)) {
-                admitted = withTimeoutOrNull(QUIET) { incoming.receive() } == null
-            }
-            if (admitted) return true
-            delay(QUIET / 10)
-        }
-        return false
-    }
+    /** A connection that stays open, so several clients can watch each other. */
+    private suspend fun HttpClient.join(name: String): DefaultClientWebSocketSession = webSocketSession(url(name))
 
     private suspend fun WebSocketSession.nextFrame(): ServerFrame {
         val frame = withTimeout(BUDGET) { incoming.receive() }
         assertTrue(frame is Frame.Text, "expected a text frame, got $frame")
         return ProtocolJson.TOLERANT.decodeFromString(ProtocolJson.SERVER_FRAME, (frame as Frame.Text).readText())
     }
+
+    private suspend fun WebSocketSession.expectFrame(expected: ServerFrame) = assertEquals(expected, nextFrame())
+
+    private suspend fun WebSocketSession.expectRoster(vararg names: String) = expectFrame(ServerFrame.Roster(names.toList()))
 
     private suspend fun WebSocketSession.expectError(code: ErrorCode): ServerFrame.Error {
         val frame = nextFrame()
@@ -190,7 +272,7 @@ class ChatEndpointTest {
 
     private suspend fun WebSocketSession.expectSilence() {
         val frame = withTimeoutOrNull(QUIET) { incoming.receive() }
-        assertNull(frame, "the server sent something it should not have yet")
+        assertNull(frame, "the server sent something it should not have")
     }
 
     private suspend fun DefaultClientWebSocketSession.expectClosed() {
@@ -205,7 +287,7 @@ class ChatEndpointTest {
         /** How long to wait before believing nothing is coming. */
         val QUIET = 250.milliseconds
 
-        /** Refused attempts are answered at once, so these cost almost nothing. */
-        const val ATTEMPTS = 20
+        const val ROUNDS = 10
+        const val RACERS = 8
     }
 }

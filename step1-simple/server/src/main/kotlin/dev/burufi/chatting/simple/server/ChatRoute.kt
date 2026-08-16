@@ -28,22 +28,27 @@ fun Route.chatRoute(registry: ConnectionRegistry) {
         val name = admit() ?: return@webSocket
         val connection = SocketConnection(name, this)
 
-        when (registry.register(connection)) {
+        when (val registration = registry.register(connection)) {
             Registration.NameTaken -> refuse(ErrorCode.NAME_TAKEN, "'$name' is already connected")
 
             is Registration.Admitted -> {
+                // The roster is already queued, put there by the registration itself.
                 val writer = launch { connection.writeLoop() }
                 try {
-                    // W-06 sends the roster here, and fans a join out to the others.
+                    registration.others.broadcast(ServerFrame.UserJoined(name.value))
                     readLoop(connection)
                 } finally {
                     // Shielded because the writer is a child of this scope: a write
                     // loop that fails cancels the scope its own cleanup runs in,
                     // and unregister suspends on the registry's mutex. Unshielded,
-                    // that path ends with the name held by nobody. Nothing writes on
-                    // this path yet, so it is W-06 and W-07 that make it reachable.
+                    // that path ends with the name held by nobody.
                     withContext(NonCancellable) {
-                        registry.unregister(connection) // W-06 broadcasts a leave on true
+                        when (val departure = registry.unregister(connection)) {
+                            is Departure.Removed ->
+                                departure.remaining.broadcast(ServerFrame.UserLeft(name.value))
+
+                            Departure.NotConnected -> Unit
+                        }
                         connection.closeOutbound()
                         writer.join()
                     }
@@ -51,6 +56,11 @@ fun Route.chatRoute(registry: ConnectionRegistry) {
             }
         }
     }
+}
+
+/** Queue [frame] for everyone here. Each send enqueues, so one slow client holds up nobody. */
+private suspend fun List<ClientConnection>.broadcast(frame: ServerFrame) {
+    forEach { it.send(frame) }
 }
 
 /** The name this client may hold, or null once it has been told why it may not. */

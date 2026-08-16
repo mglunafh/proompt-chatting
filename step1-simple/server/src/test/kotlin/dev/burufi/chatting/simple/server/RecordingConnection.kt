@@ -29,5 +29,12 @@ class RecordingConnection(
 
     fun frames(): List<ServerFrame> = received.toList()
 
+    /** The roster this connection was sent, which is always the first thing it gets. */
+    fun roster(): List<String> =
+        when (val first = frames().firstOrNull()) {
+            is ServerFrame.Roster -> first.names
+            else -> error("$this was sent $first before any roster")
+        }
+
     override fun toString(): String = "$name@${hashCode().toString(16)}"
 }
