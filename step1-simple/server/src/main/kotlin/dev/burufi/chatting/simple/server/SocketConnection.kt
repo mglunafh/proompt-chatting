@@ -56,7 +56,7 @@ class SocketConnection(
 
     override fun toString(): String = "$name@${hashCode().toString(16)}"
 
-    private companion object {
+    internal companion object {
         /**
          * Deep enough that ordinary traffic never reaches it, shallow enough that a
          * client which stops reading is noticed rather than accumulated.
