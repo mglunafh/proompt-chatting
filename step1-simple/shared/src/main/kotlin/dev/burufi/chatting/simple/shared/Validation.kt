@@ -13,13 +13,43 @@ sealed interface Validated<out T> {
 }
 
 /**
- * The rules a message body is held to, as pure functions. The name rules live on
- * [ClientName], which is the only thing that can vouch for one.
+ * The rules an input is held to, as pure functions. The name rules live on [ClientName],
+ * which is the only thing that can vouch for one.
  */
 object Validation {
     /** The two control characters a body may carry. */
     private const val TAB = '\t'
     private const val NEWLINE = '\n'
+
+    /** A DNS label: 1 to 63 characters, alphanumeric at both ends, hyphens within (RFC 1123). */
+    private const val LABEL = "[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?"
+
+    /** Labels separated by dots, optionally fully qualified. IPv4 and punycode match this too. */
+    private val HOST_NAME = Regex("$LABEL(?:\\.$LABEL)*\\.?")
+
+    /** RFC 3986's IP-literal. The brackets are the form a URL needs, and nothing adds them for us. */
+    private val IP_V6 = Regex("\\[[0-9A-Fa-f:.]{2,45}]")
+
+    /** RFC 1035's cap on a whole name. */
+    private const val MAX_HOST_LENGTH = 253
+
+    /**
+     * Whether [raw] may stand in the host slot of a URL.
+     *
+     * A predicate rather than a [Validated], because there is no [ErrorCode] that fits: a
+     * host is an argument to a process, never something a frame carries, and every code is
+     * half of a [ServerFrame.Error].
+     *
+     * Deliberately narrower than RFC 3986's `reg-name`, which permits sub-delims. The point
+     * is to stop a host carrying a path, query or fragment of its own, not to prove the
+     * address resolves.
+     */
+    fun isHost(raw: String): Boolean =
+        if (raw.startsWith('[')) {
+            IP_V6.matches(raw)
+        } else {
+            raw.length <= MAX_HOST_LENGTH && HOST_NAME.matches(raw)
+        }
 
     /**
      * Normalize a body and refuse it if it breaks a rule, reporting the first

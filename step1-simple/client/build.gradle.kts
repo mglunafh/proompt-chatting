@@ -22,8 +22,15 @@ dependencies {
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.kotlinx.coroutines.test)
     testRuntimeOnly(libs.junit.platform.launcher)
+
+    testImplementation(project(":step1-simple:server"))
+    testImplementation(libs.ktor.server.cio)
 }
 
 application {
     mainClass.set("dev.burufi.chatting.simple.client.ClientKt")
+}
+
+tasks.named<JavaExec>("run") {
+    standardInput = System.`in`
 }
