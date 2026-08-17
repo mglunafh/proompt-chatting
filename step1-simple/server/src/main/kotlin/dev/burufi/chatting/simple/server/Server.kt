@@ -1,5 +1,6 @@
 package dev.burufi.chatting.simple.server
 
+import dev.burufi.chatting.simple.shared.Endpoint
 import dev.burufi.chatting.simple.shared.Limits
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
@@ -11,10 +12,8 @@ import io.ktor.server.websocket.pingPeriod
 import io.ktor.server.websocket.timeout
 import kotlin.time.Duration.Companion.seconds
 
-const val DEFAULT_PORT = 8080
-
 fun main() {
-    embeddedServer(CIO, port = DEFAULT_PORT, host = "0.0.0.0", module = Application::module)
+    embeddedServer(CIO, port = Endpoint.DEFAULT_PORT, host = "0.0.0.0", module = Application::module)
         .start(wait = true)
 }
 
@@ -25,7 +24,6 @@ fun Application.module() {
         timeout = 15.seconds
     }
 
-    // One registry per application, so a test gets a fresh room.
     val registry = ConnectionRegistry()
 
     routing {
