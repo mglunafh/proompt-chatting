@@ -20,7 +20,13 @@ Both exit non-zero on an error and zero on warnings alone.
   overrides the `## Sources` section.
 - `--template PATH` — page template, `graph-template.html` beside the script by default.
 - `--out-dir PATH` — write the outputs here instead of beside each input.
+- `--no-timestamp` — `build` only: leave the time out of the generated-by line, so an
+  unchanged `deps.md` rebuilds to byte-identical output.
 - `--force` — `init` only: overwrite an existing file.
+
+Both outputs carry a generated-by line — under the heading of `deps-mermaid.md`, and in the
+footer of `deps.html` as well as a comment on its first line. They are artifacts: change
+`deps.md` and build again rather than editing them.
 
 ## Shape of the file
 
