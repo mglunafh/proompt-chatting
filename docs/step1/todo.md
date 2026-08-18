@@ -1,6 +1,7 @@
 # Step 1 tasks
 
 - **W-09 Client rendering** — inert rendering of bodies and names on the way to the terminal, the `run` task and the README. SEC-09.
+- **W-10 Client commands** — the `/` prefix parsed beside `@` in the same pass over a typed line: `/exit` leaving by the path end-of-input already takes, `/help` listing both sigils. An unrecognized `/word` refused as a command rather than with the message-syntax reason. Table-driven tests on the parse, one over a socket proving `/exit` closes it. README. ST1-02.
 
 ----
 

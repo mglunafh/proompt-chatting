@@ -12,4 +12,4 @@
 ## Step-local
 
 - **ST1-01 Connect name** — identity is a name the client passes as a command-line argument and the server takes at the upgrade. It must pass the same character rules as a message body and be unique among connected clients; a duplicate is refused at the upgrade. The name lives for the length of the connection and is the address a direct message is sent to.
-1
+- **ST1-02 Client commands** — a typed line beginning with `/` is processed by the client: `/exit` closes the connection, and `/help` names what can be typed. The two sigils divide the grammar: `@` addresses a recipient, `/` addresses the client.
