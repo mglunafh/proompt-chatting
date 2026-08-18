@@ -15,11 +15,13 @@ graph TD
   W08[W-08 Client]
   ST101[ST1-01 Connect name]
   W09[W-09 Client rendering]
+  W10[W-10 Client commands]
   MSG01[MSG-01 Direct messages]
   MSG04[MSG-04 Live connection]
   USR04[USR-04 Presence]
   USR05[USR-05 Presence snapshot]
   SEC09[SEC-09 Client-side sanitization]
+  ST102[ST1-02 Client commands]
 
   W01 --> W02
   W02 --> W03
@@ -33,6 +35,7 @@ graph TD
   W05 --> W07
   W05 --> W08
   W08 --> W09
+  W08 --> W10
   W07 -.-> MSG01
   W02 -.-> MSG04
   W05 -.-> MSG04
@@ -47,11 +50,12 @@ graph TD
   W03 -.-> ST101
   W04 -.-> ST101
   W05 -.-> ST101
+  W10 -.-> ST102
 
   classDef task fill:#16a34a,stroke:#14532d,stroke-width:1px,color:#ffffff
   classDef feature fill:#dc2626,stroke:#7f1d1d,stroke-width:1px,color:#ffffff
-  class W01,W02,W03,W04,W05,W06,W07,W08,W09 task
-  class SEC07,ST101,MSG01,MSG04,USR04,USR05,SEC09 feature
+  class W01,W02,W03,W04,W05,W06,W07,W08,W09,W10 task
+  class SEC07,ST101,MSG01,MSG04,USR04,USR05,SEC09,ST102 feature
 ```
 
 ## Grouped by kind
@@ -68,6 +72,7 @@ graph LR
     W07[W-07 Message routing]
     W08[W-08 Client]
     W09[W-09 Client rendering]
+    W10[W-10 Client commands]
     W01 --> W02
     W02 --> W03
     W02 --> W04
@@ -80,6 +85,7 @@ graph LR
     W05 --> W07
     W05 --> W08
     W08 --> W09
+    W08 --> W10
   end
 
   subgraph Features
@@ -90,6 +96,7 @@ graph LR
     SEC07[SEC-07 Message body limits]
     SEC09[SEC-09 Client-side sanitization]
     ST101[ST1-01 Connect name]
+    ST102[ST1-02 Client commands]
   end
 
   W07 -.-> MSG01
@@ -106,9 +113,10 @@ graph LR
   W03 -.-> ST101
   W04 -.-> ST101
   W05 -.-> ST101
+  W10 -.-> ST102
 
   classDef task fill:#16a34a,stroke:#14532d,stroke-width:1px,color:#ffffff
   classDef feature fill:#dc2626,stroke:#7f1d1d,stroke-width:1px,color:#ffffff
-  class W01,W02,W03,W04,W05,W06,W07,W08,W09 task
-  class SEC07,ST101,MSG01,MSG04,USR04,USR05,SEC09 feature
+  class W01,W02,W03,W04,W05,W06,W07,W08,W09,W10 task
+  class SEC07,ST101,MSG01,MSG04,USR04,USR05,SEC09,ST102 feature
 ```
