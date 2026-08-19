@@ -3,12 +3,9 @@ package dev.burufi.chatting.simple.client
 import dev.burufi.chatting.simple.shared.ClientName
 import dev.burufi.chatting.simple.shared.ServerFrame
 
-/**
- * A frame as one line for the terminal.
- *
- * The only place untrusted text reaches the terminal, which is what W-09 needs in order
- * to render it inertly in one change rather than everywhere.
- */
+private const val CONTINUATION = "    "
+
+/** A frame as text for a terminal. Later lines are indented. */
 fun render(
     frame: ServerFrame,
     me: ClientName,
@@ -26,4 +23,4 @@ fun render(
             if (frame.from == me.value) "-> ${frame.to}: ${frame.body}" else "${frame.from}: ${frame.body}"
 
         is ServerFrame.Error -> "! ${frame.code.name.lowercase()}: ${frame.reason}"
-    }
+    }.replace("\n", "\n$CONTINUATION")

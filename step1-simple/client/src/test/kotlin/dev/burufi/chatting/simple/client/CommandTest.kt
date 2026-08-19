@@ -91,11 +91,9 @@ class CommandTest {
     @ParameterizedTest
     @ValueSource(strings = ["@telltale", "telltale", "@telltale[2J", "@telltale! hi", "/telltale"])
     fun `a refusal does not quote the line it refused`(line: String) {
-        // Stdin is not always a keyboard, and the reason goes to the terminal unescaped
-        // until W-09. Nothing here has passed ClientName or Validation yet.
         val reason = (Command.of(line) as Command.Unusable).reason
-        assertFalse(reason.contains("telltale"), "the refusal quoted the line: $reason")
-        assertFalse(reason.contains(ESC), "the refusal carries the escape itself")
+        assertFalse(reason.contains("telltale"), "the refusal quoted a line nothing has vouched for: $reason")
+        assertFalse(reason.contains(ESC), "the refusal carries an escape out of the line it refused")
     }
 
     @ParameterizedTest

@@ -1,5 +1,6 @@
 # Implementation progress 
 
+- **W-09 Client rendering** — Validate and normalize the message body before the rendering on the client: an allowlist keeping printable text, `\n` and `\t`, replacing the rest visibly, and indenting the lines after the first one. SEC-09.
 - **W-10 Client commands** — implemented chat commands: `/exit` stops reading stdin and closes the websocket session, `/help` lists both sigils '/' and '@', unrecognized `/word` is refused as a command. README. ST1-02.
 - **W-08 Client** — Clikt name, host and port, the connection, concurrent send and receive loops, and exit on close. MSG-04.
 - **W-07 Message routing** — validate the incoming client messages on the server, relay them to the recipient's socket. MSG-01.

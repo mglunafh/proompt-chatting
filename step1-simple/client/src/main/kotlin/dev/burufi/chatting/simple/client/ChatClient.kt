@@ -19,13 +19,16 @@ import kotlinx.serialization.SerializationException
  *
  * @property name Username the client got registered on the server with.
  * @property userInput Buffer for lines as the person enters them, before being sent to the server.
- * @property show Consumer for incoming lines.
+ * @property emit Consumer for finished lines.
  */
 class ChatClient(
     private val name: ClientName,
     private val userInput: ReceiveChannel<String>,
-    private val show: (String) -> Unit,
+    private val emit: (String) -> Unit,
 ) {
+    /** Emit only the inert messages. */
+    private fun show(line: String) = emit(inert(line))
+
     /**
      * Run until the socket closes.
      *

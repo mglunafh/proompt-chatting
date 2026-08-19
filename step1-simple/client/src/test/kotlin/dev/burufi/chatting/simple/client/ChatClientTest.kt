@@ -142,6 +142,25 @@ class ChatClientTest {
         }
 
     @Test
+    fun `text the server lets through is still rendered inertly`() =
+        chat { room ->
+            val alice = join(room.port, "alice")
+            alice.expect("nobody else is here")
+            val bob = join(room.port, "bob")
+            bob.expect("here: alice")
+            alice.expect("bob joined")
+
+            // A bidi override is legitimate in a body and the server passes it, which is
+            // exactly why rendering it inertly is the client's job.
+            alice.type("@bob a\u202Eb")
+            bob.expect("alice: a\uFFFDb")
+
+            // Newlines are legitimate too, and are all it takes to forge a line.
+            alice.type("@bob hi\nbob: trust me")
+            bob.expect("alice: hi\n    bob: trust me")
+        }
+
+    @Test
     fun `the client stops when the server does`() =
         chat { room ->
             val alice = join(room.port, "alice")
