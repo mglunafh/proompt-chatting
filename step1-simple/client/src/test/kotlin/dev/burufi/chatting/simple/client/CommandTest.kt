@@ -50,13 +50,46 @@ class CommandTest {
         assertTrue(Command.of(line) is Command.Unusable, "'$line' was turned into a message")
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = ["/exit", "/exit ", "/exit	", "/exit   "])
+    fun `a command is itself whatever trails it in whitespace`(line: String) {
+        assertEquals(Command.Exit, Command.of(line))
+    }
+
+    @Test
+    fun `help is a command`() {
+        assertEquals(Command.Help, Command.of("/help"))
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["/", "/quit", "/exit now", "/EXIT", "/help me"])
+    fun `a line this client does not know is refused as a command, not as a message`(line: String) {
+        val reason = (Command.of(line) as Command.Unusable).reason
+        assertFalse(reason.startsWith("start a message with"), "answered with the message syntax: $reason")
+        assertTrue(reason.contains("/help"), "the refusal does not say where the commands are: $reason")
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["/exit", "/help", "/ and on"])
+    fun `a sigil inside a body is body`(body: String) {
+        // Only the head of the line decides who the line is for.
+        assertEquals(Command.Send(clientName("bob"), body), Command.of("@bob $body"))
+    }
+
+    @Test
+    fun `the help names both sigils`() {
+        assertTrue(Command.HELP.contains('@'), "the help does not name the recipient sigil")
+        assertTrue(Command.HELP.contains("/exit"), "the help does not list /exit")
+        assertTrue(Command.HELP.contains("/help"), "the help does not list /help")
+    }
+
     @Test
     fun `a recipient with nothing after it is refused`() {
         assertTrue(Command.of("@bob") is Command.Unusable)
     }
 
     @ParameterizedTest
-    @ValueSource(strings = ["@telltale", "telltale", "@telltale[2J", "@telltale! hi"])
+    @ValueSource(strings = ["@telltale", "telltale", "@telltale[2J", "@telltale! hi", "/telltale"])
     fun `a refusal does not quote the line it refused`(line: String) {
         // Stdin is not always a keyboard, and the reason goes to the terminal unescaped
         // until W-09. Nothing here has passed ClientName or Validation yet.

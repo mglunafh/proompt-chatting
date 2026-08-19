@@ -109,6 +109,39 @@ class ChatClientTest {
         }
 
     @Test
+    fun `exit closes the connection and the room is told`() =
+        chat { room ->
+            val alice = join(room.port, "alice")
+            alice.expect("nobody else is here")
+            val bob = join(room.port, "bob")
+            bob.expect("here: alice")
+            alice.expect("bob joined")
+
+            alice.type("/exit")
+
+            withTimeout(BUDGET) { alice.job.join() }
+            assertTrue(alice.admitted(), "alice was admitted before leaving")
+            // Bob hearing it is what says the socket really closed, rather than the
+            // client merely stopping on its own side.
+            bob.expect("alice left")
+        }
+
+    @Test
+    fun `help is answered by the client without troubling the server`() =
+        chat { room ->
+            val alice = join(room.port, "alice")
+            alice.expect("nobody else is here")
+            val bob = join(room.port, "bob")
+            bob.expect("here: alice")
+            alice.expect("bob joined")
+
+            alice.type("/help")
+            assertTrue(alice.next()!!.contains("/exit"), "the help does not list the commands")
+
+            bob.expectSilence()
+        }
+
+    @Test
     fun `the client stops when the server does`() =
         chat { room ->
             val alice = join(room.port, "alice")

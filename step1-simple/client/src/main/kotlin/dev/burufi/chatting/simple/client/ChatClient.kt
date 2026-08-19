@@ -60,6 +60,8 @@ class ChatClient(
                             when (val command = Command.of(line)) {
                                 is Command.Send -> session.send(command)
                                 is Command.Unusable -> show("! ${command.reason}")
+                                Command.Help -> show(Command.HELP)
+                                Command.Exit -> break
                                 Command.Nothing -> Unit
                             }
                         }
