@@ -2,6 +2,9 @@ package dev.burufi.chatting.simple.client
 
 import dev.burufi.chatting.simple.shared.ErrorCode
 import dev.burufi.chatting.simple.shared.ServerFrame
+import dev.burufi.chatting.simple.shared.TestCharacters.BIDI_OVERRIDE
+import dev.burufi.chatting.simple.shared.TestCharacters.CSI
+import dev.burufi.chatting.simple.shared.TestCharacters.ESC
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -58,7 +61,7 @@ class RenderTest {
         // ChatClientTest; what it pairs with is pinned in InertTest.
         assertEquals(
             "here: a␛b, carol",
-            inert(render(ServerFrame.Roster(listOf("a\u001Bb", "carol")), me)),
+            inert(render(ServerFrame.Roster(listOf("a${ESC}b", "carol")), me)),
         )
     }
 
@@ -83,7 +86,7 @@ class RenderTest {
 
     @Test
     fun `no frame can carry a character that drives the terminal`() {
-        val hostile = "a\u001B[2Jb\u009Bc\u202Ed"
+        val hostile = "a$ESC[2Jb${CSI}c${BIDI_OVERRIDE}d"
         val frames =
             listOf(
                 ServerFrame.Roster(listOf(hostile, hostile)),

@@ -2,6 +2,8 @@ package dev.burufi.chatting.simple.client
 
 import dev.burufi.chatting.simple.server.module
 import dev.burufi.chatting.simple.shared.Endpoint
+import dev.burufi.chatting.simple.shared.TestCharacters.BIDI_OVERRIDE
+import dev.burufi.chatting.simple.shared.TestCharacters.REPLACEMENT
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.websocket.WebSockets
@@ -152,8 +154,8 @@ class ChatClientTest {
 
             // A bidi override is legitimate in a body and the server passes it, which is
             // exactly why rendering it inertly is the client's job.
-            alice.type("@bob a\u202Eb")
-            bob.expect("alice: a\uFFFDb")
+            alice.type("@bob a${BIDI_OVERRIDE}b")
+            bob.expect("alice: a${REPLACEMENT}b")
 
             // Newlines are legitimate too, and are all it takes to forge a line.
             alice.type("@bob hi\nbob: trust me")

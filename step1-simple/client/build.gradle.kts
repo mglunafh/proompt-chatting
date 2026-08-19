@@ -18,6 +18,7 @@ dependencies {
 
     runtimeOnly(libs.logback.classic)
 
+    testImplementation(testFixtures(project(":step1-simple:shared")))
     testImplementation(platform(libs.bom.junit))
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.kotlinx.coroutines.test)

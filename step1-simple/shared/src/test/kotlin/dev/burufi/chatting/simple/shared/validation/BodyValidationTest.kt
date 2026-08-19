@@ -2,6 +2,16 @@ package dev.burufi.chatting.simple.shared.validation
 
 import dev.burufi.chatting.simple.shared.ErrorCode
 import dev.burufi.chatting.simple.shared.Limits
+import dev.burufi.chatting.simple.shared.TestCharacters.BIDI_OVERRIDE
+import dev.burufi.chatting.simple.shared.TestCharacters.CSI
+import dev.burufi.chatting.simple.shared.TestCharacters.DEL
+import dev.burufi.chatting.simple.shared.TestCharacters.ESC
+import dev.burufi.chatting.simple.shared.TestCharacters.E_ACUTE
+import dev.burufi.chatting.simple.shared.TestCharacters.HIGH_SURROGATE
+import dev.burufi.chatting.simple.shared.TestCharacters.LOW_SURROGATE
+import dev.burufi.chatting.simple.shared.TestCharacters.NUL
+import dev.burufi.chatting.simple.shared.TestCharacters.ROCKET
+import dev.burufi.chatting.simple.shared.TestCharacters.ZERO_WIDTH
 import dev.burufi.chatting.simple.shared.Validated
 import dev.burufi.chatting.simple.shared.Validation
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -59,21 +69,6 @@ class BodyValidationTest {
     }
 
     companion object {
-        private val ESC = Char(0x1B)
-        private val CSI = Char(0x9B)
-        private val NUL = Char(0x00)
-        private val DEL = Char(0x7F)
-        private val HIGH_SURROGATE = Char(0xD83D)
-        private val LOW_SURROGATE = Char(0xDE80)
-        private val BIDI_OVERRIDE = Char(0x202E)
-        private val ZERO_WIDTH = Char(0x200B)
-
-        /** Two UTF-8 bytes to one character, which is what the cap cases turn on. */
-        private val E_ACUTE = Char(0xE9)
-
-        /** U+1F680, the pair whose halves are refused one at a time below. */
-        private val ROCKET = "$HIGH_SURROGATE$LOW_SURROGATE"
-
         @JvmStatic
         fun accepted(): List<Arguments> =
             listOf(

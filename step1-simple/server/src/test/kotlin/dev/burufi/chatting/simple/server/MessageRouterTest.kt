@@ -4,6 +4,7 @@ import dev.burufi.chatting.simple.shared.ClientFrame
 import dev.burufi.chatting.simple.shared.ErrorCode
 import dev.burufi.chatting.simple.shared.Limits
 import dev.burufi.chatting.simple.shared.ServerFrame
+import dev.burufi.chatting.simple.shared.TestCharacters.ESC
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -132,8 +133,6 @@ class MessageRouterTest {
     }
 
     companion object {
-        private val ESC = Char(0x1B)
-
         @JvmStatic
         fun impossibleNames(): List<Arguments> =
             listOf(

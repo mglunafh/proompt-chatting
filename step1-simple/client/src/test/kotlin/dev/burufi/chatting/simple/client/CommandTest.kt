@@ -1,6 +1,7 @@
 package dev.burufi.chatting.simple.client
 
 import dev.burufi.chatting.simple.shared.Limits
+import dev.burufi.chatting.simple.shared.TestCharacters.ESC
 import dev.burufi.chatting.simple.shared.Validated
 import dev.burufi.chatting.simple.shared.Validation
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -110,8 +111,6 @@ class CommandTest {
     }
 
     companion object {
-        private val ESC = Char(0x1B)
-
         @JvmStatic
         fun refusedBodies(): List<Arguments> =
             listOf(

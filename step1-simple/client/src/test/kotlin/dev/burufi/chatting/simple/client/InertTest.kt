@@ -1,5 +1,19 @@
 package dev.burufi.chatting.simple.client
 
+import dev.burufi.chatting.simple.shared.TestCharacters.BEL
+import dev.burufi.chatting.simple.shared.TestCharacters.BIDI_ISOLATE
+import dev.burufi.chatting.simple.shared.TestCharacters.BIDI_OVERRIDE
+import dev.burufi.chatting.simple.shared.TestCharacters.BYTE_ORDER_MARK
+import dev.burufi.chatting.simple.shared.TestCharacters.CSI
+import dev.burufi.chatting.simple.shared.TestCharacters.DEL
+import dev.burufi.chatting.simple.shared.TestCharacters.ESC
+import dev.burufi.chatting.simple.shared.TestCharacters.HIGH_SURROGATE
+import dev.burufi.chatting.simple.shared.TestCharacters.LOW_SURROGATE
+import dev.burufi.chatting.simple.shared.TestCharacters.NEL
+import dev.burufi.chatting.simple.shared.TestCharacters.NUL
+import dev.burufi.chatting.simple.shared.TestCharacters.REPLACEMENT
+import dev.burufi.chatting.simple.shared.TestCharacters.ZERO_WIDTH
+import dev.burufi.chatting.simple.shared.TestCharacters.ZERO_WIDTH_JOINER
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -8,7 +22,6 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.Arguments.argumentSet
 import org.junit.jupiter.params.provider.MethodSource
-import org.junit.jupiter.params.provider.ValueSource
 
 class InertTest {
     @ParameterizedTest
@@ -34,7 +47,7 @@ class InertTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = ["a\uD83Db", "a\uDE00b", "\uD83D", "\uDE00"])
+    @MethodSource("lonelySurrogates")
     fun `a surrogate with no partner is replaced`(raw: String) {
         assertFalse(inert(raw).any { it.isSurrogate() }, "a lone surrogate reached the terminal")
     }
@@ -59,26 +72,33 @@ class InertTest {
     }
 
     companion object {
-        private const val REPLACEMENT = "�"
+        @JvmStatic
+        fun lonelySurrogates(): List<Arguments> =
+            listOf(
+                argumentSet("a high surrogate mid-string", "a${HIGH_SURROGATE}b"),
+                argumentSet("a low surrogate mid-string", "a${LOW_SURROGATE}b"),
+                argumentSet("a high surrogate alone", HIGH_SURROGATE.toString()),
+                argumentSet("a low surrogate alone", LOW_SURROGATE.toString()),
+            )
 
         @JvmStatic
         fun replaced(): List<Arguments> =
             listOf(
                 // C0 has a printable twin per character, so what was there stays legible.
-                argumentSet("escape", "a\u001Bb", "a␛b"),
-                argumentSet("the sequence it opens", "a\u001B[2Jb", "a␛[2Jb"),
-                argumentSet("null", "a\u0000b", "a␀b"),
-                argumentSet("bell", "a\u0007b", "a␇b"),
+                argumentSet("escape", "a${ESC}b", "a␛b"),
+                argumentSet("the sequence it opens", "a$ESC[2Jb", "a␛[2Jb"),
+                argumentSet("null", "a${NUL}b", "a␀b"),
+                argumentSet("bell", "a${BEL}b", "a␇b"),
                 argumentSet("carriage return, the overwrite primitive", "a\rb", "a␍b"),
-                argumentSet("delete, which sits past the block's run of C0", "a\u007Fb", "a␡b"),
+                argumentSet("delete, which sits past the block's run of C0", "a${DEL}b", "a␡b"),
                 // C1 has no such twin, and neither does anything below.
-                argumentSet("csi on its own, which needs no escape byte", "a\u009Bb", "a${REPLACEMENT}b"),
-                argumentSet("a C1 with no picture of its own", "a\u0085b", "a${REPLACEMENT}b"),
-                argumentSet("a bidi override", "a\u202Eb", "a${REPLACEMENT}b"),
-                argumentSet("a bidi isolate", "a\u2066b", "a${REPLACEMENT}b"),
-                argumentSet("a zero width space", "a\u200Bb", "a${REPLACEMENT}b"),
-                argumentSet("a zero width joiner, emoji sequences included", "a\u200Db", "a${REPLACEMENT}b"),
-                argumentSet("a byte order mark", "a\uFEFFb", "a${REPLACEMENT}b"),
+                argumentSet("csi on its own, which needs no escape byte", "a${CSI}b", "a${REPLACEMENT}b"),
+                argumentSet("a C1 with no picture of its own", "a${NEL}b", "a${REPLACEMENT}b"),
+                argumentSet("a bidi override", "a${BIDI_OVERRIDE}b", "a${REPLACEMENT}b"),
+                argumentSet("a bidi isolate", "a${BIDI_ISOLATE}b", "a${REPLACEMENT}b"),
+                argumentSet("a zero width space", "a${ZERO_WIDTH}b", "a${REPLACEMENT}b"),
+                argumentSet("a zero width joiner, emoji sequences included", "a${ZERO_WIDTH_JOINER}b", "a${REPLACEMENT}b"),
+                argumentSet("a byte order mark", "a${BYTE_ORDER_MARK}b", "a${REPLACEMENT}b"),
             )
 
         @JvmStatic

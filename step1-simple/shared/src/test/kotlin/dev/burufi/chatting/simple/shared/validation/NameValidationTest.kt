@@ -2,6 +2,8 @@ package dev.burufi.chatting.simple.shared.validation
 
 import dev.burufi.chatting.simple.shared.ClientName
 import dev.burufi.chatting.simple.shared.ErrorCode
+import dev.burufi.chatting.simple.shared.TestCharacters.CYRILLIC_A
+import dev.burufi.chatting.simple.shared.TestCharacters.ESC
 import dev.burufi.chatting.simple.shared.Validated
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -55,9 +57,6 @@ class NameValidationTest {
     }
 
     companion object {
-        /** Built from code points, so nothing invisible is carried in this source. */
-        private val ESC = Char(0x1B)
-        private val CYRILLIC_A = Char(0x430)
         private val DOLLAR = Char(0x24)
 
         @JvmStatic

@@ -6,6 +6,7 @@ import dev.burufi.chatting.simple.shared.ErrorCode
 import dev.burufi.chatting.simple.shared.Limits
 import dev.burufi.chatting.simple.shared.ProtocolJson
 import dev.burufi.chatting.simple.shared.ServerFrame
+import dev.burufi.chatting.simple.shared.TestCharacters.ESC
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.websocket.DefaultClientWebSocketSession
 import io.ktor.client.plugins.websocket.WebSockets
@@ -391,8 +392,6 @@ class ChatEndpointTest {
     }
 
     private companion object {
-        val ESC = Char(0x1B)
-
         /** Generous: it exists to fail a hung test rather than to time anything. */
         val BUDGET = 5.seconds
 
