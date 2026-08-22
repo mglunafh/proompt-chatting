@@ -3,7 +3,7 @@ package dev.burufi.chatting.durable.server
 import dev.burufi.chatting.durable.server.config.Config
 import dev.burufi.chatting.durable.server.config.ConfigException
 import dev.burufi.chatting.durable.server.config.DatabaseConfig
-import dev.burufi.chatting.durable.server.db.openPool
+import dev.burufi.chatting.durable.server.db.DatabaseUtils
 import org.slf4j.LoggerFactory
 import kotlin.system.exitProcess
 
@@ -23,15 +23,14 @@ fun main() {
     val config = DatabaseConfig.from(resolved)
 
     log.info("connecting to {} as {}", config.jdbcUrl, config.user)
-    openPool(config).use { pool ->
-        pool.connection.use { connection ->
-            connection.createStatement().use { statement ->
-                statement.executeQuery("SELECT 1").use { rows ->
-                    check(rows.next()) { "SELECT 1 returned no row" }
-                }
-            }
+    DatabaseUtils.openPool(config).use { pool ->
+        val result = DatabaseUtils.migrate(pool)
+        if (result.migrationsExecuted == 0) {
+            // targetSchemaVersion is null when nothing ran, so the version comes from where it started.
+            log.info("schema already at {}", result.initialSchemaVersion)
+        } else {
+            log.info("applied {} migration(s), schema now at {}", result.migrationsExecuted, result.targetSchemaVersion)
         }
-        log.info("database reachable, pool open")
     }
     log.info("pool closed")
 }
