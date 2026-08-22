@@ -32,6 +32,7 @@ task     W-27    Client account commands
 task     W-28    Client connection and reconnect
 task     W-29    Client rendering
 task     W-30    Client commands
+task     W-31    Server configuration
 
 feature  MSG-01  Direct messages
 feature  MSG-02  Conversation list
@@ -56,6 +57,7 @@ feature  SEC-07  Message body limits
 feature  SEC-08  Transport caps
 feature  SEC-09  Client-side sanitization
 feature  OPS-01  Health endpoint
+feature  OPS-07  Server configuration
 feature  ST2-01  Client token store
 feature  ST2-02  Client account commands
 feature  ST2-03  Client commands
@@ -63,7 +65,8 @@ feature  ST2-03  Client commands
 ## Order
 
 W-01 -> W-02, W-06, W-07, W-26
-W-02 -> W-03
+W-02 -> W-03, W-31
+W-31 -> W-05
 W-03 -> W-04, W-23
 W-04 -> W-05, W-08, W-09, W-23
 W-05 -> W-11, W-12, W-17, W-22
@@ -112,6 +115,7 @@ SEC-07  <- W-06, W-07
 SEC-08  <- W-06
 SEC-09  <- W-29
 OPS-01  <- W-05
+OPS-07  <- W-31
 ST2-01  <- W-26
 ST2-02  <- W-27
 ST2-03  <- W-30

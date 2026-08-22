@@ -16,3 +16,7 @@ captures/
 
 # Misc
 local.properties
+
+# Compose secrets
+step2-durable/compose/secrets/*
+!step2-durable/compose/secrets/*.example

@@ -104,6 +104,7 @@ drifted is visible.
 - **OPS-04 Log aggregation** — logs from every container collected and queryable after the fact, without a log agent running beside the server.
 - **OPS-05 Dashboards** — one view over the metrics and the logs together, which is where an operator looks first.
 - **OPS-06 Backups** — cron'd `pg_dump` to local disk, starting once the database holds real data. No offsite copy.
+- **OPS-07 Server configuration** — every setting is declared once with its environment and property spellings, its type and its default, and resolved at boot from a fixed order of sources: a system property, then the environment, then a named properties file, then the one packaged in the jar. Each accepts its value directly or as a path to a file holding it, which is what lets SEC-03's mounted secrets and a developer's local file use one mechanism. Resolution order, the file-form rules and the boot report are in [notes-configuration.md](notes-configuration.md).
 
 ## Nice-to-have
 

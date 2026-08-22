@@ -47,6 +47,7 @@ bottom is part of the scope rather than a footnote to it.
 ### Admin and ops
 
 - **OPS-01 Health endpoint** — `GET /health`, a liveness probe for Docker Compose. No auth, no dependencies.
+- **OPS-07 Server configuration** — settings declared once each with both spellings, a type and a default, resolved at boot from system properties, the environment, a file named by `-Dserver.config`, then the one packaged in the jar, each value given directly or as a path to a file holding it. Reduced: the database settings alone, since nothing else is configurable yet; no reload and no remote configuration.
 
 ## Step-local
 
