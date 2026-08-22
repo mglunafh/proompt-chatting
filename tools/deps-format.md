@@ -3,7 +3,8 @@
 A `deps.md` file is the input to `deps-graph.py`. It names the tasks and features of one
 step, states which tasks wait on which, and states which tasks complete each feature.
 Everything else the outputs need — row positions, the Mermaid diagrams, the interactive
-page — is derived from it.
+page — is derived from it. It also names the file holding the current progress, which
+the page reads for itself when it opens.
 
 ## Commands
 
@@ -104,6 +105,38 @@ The ID must match a node. The first file to define an ID wins. Backticks, emphas
 Markdown links are stripped, a trailing list of feature IDs is dropped, and the opening
 letter is capitalised, since these bullets read as a clause after the bold name. A node
 with no description anywhere falls back to its name as hover text.
+
+## Progress
+
+The file the page reads when it opens, to tick what is already done. Named here relative
+to the page, and **never read by the script** — only the name is carried into `deps.html`.
+
+```
+progress.md
+```
+
+- Omit the section entirely and `progress.md` beside the page is read.
+- Include the section with no files listed and nothing is marked.
+- More than one file may be listed; their IDs are pooled.
+
+The file is read for the same bullets the prose files use, so `progress.md` needs no
+special form — writing a task up marks it:
+
+```
+- **W-02 Postgres and Compose** — the Compose stack and the pool opened at boot.
+```
+
+A task is done when it is written up. A feature is done once every task covering it is, so
+the coverage edges decide it and nothing has to be restated. An ID that no node defines is
+ignored.
+
+The page hatches a done node and ticks its ID, tallies both kinds in the legend, and ticks
+the IDs listed in the status panel, so a row of prerequisites shows what is left.
+
+A page opened straight off disk (`file://`) cannot fetch the file: browsers give such a
+page an opaque origin, and reading a sibling is blocked. It then offers to take the file
+by drag-and-drop or a picker instead. Served over HTTP — for example, `python -m http.server`
+in the same directory — it loads by itself.
 
 ## Derived rows
 

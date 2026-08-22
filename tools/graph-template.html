@@ -22,6 +22,19 @@
     --edge: #c3ccd6;
     --edge-active: #3a6ea5;
     --on-solid: #ffffff;
+    --hatch: rgba(21, 26, 33, .14);
+    --hatch-on-solid: rgba(255, 255, 255, .26);
+    --tick: #d33a2c;
+    --tick-on-solid: #ffc9c2;
+    /* Declared once here: var() resolves where it is used, so the themes only
+       restate the colours above. Two runs crossing make the hatch a cross-hatch;
+       the lines are 1px because every crossing doubles the ink. */
+    --hatching:
+      repeating-linear-gradient(45deg, transparent 0 5px, var(--hatch) 5px 6px),
+      repeating-linear-gradient(-45deg, transparent 0 5px, var(--hatch) 5px 6px);
+    --hatching-solid:
+      repeating-linear-gradient(45deg, transparent 0 5px, var(--hatch-on-solid) 5px 6px),
+      repeating-linear-gradient(-45deg, transparent 0 5px, var(--hatch-on-solid) 5px 6px);
     --shadow: 0 1px 2px rgba(21, 26, 33, .06), 0 8px 24px rgba(21, 26, 33, .08);
 
     --font-mono: ui-monospace, "JetBrains Mono", "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
@@ -48,6 +61,10 @@
       --edge: #2f3a47;
       --edge-active: #77a5dd;
       --on-solid: #ffffff;
+      --hatch: rgba(228, 234, 241, .17);
+      --hatch-on-solid: rgba(255, 255, 255, .26);
+      --tick: #ff6a5a;
+      --tick-on-solid: #ffc9c2;
       --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px rgba(0, 0, 0, .35);
     }
   }
@@ -71,6 +88,10 @@
     --edge: #2f3a47;
     --edge-active: #77a5dd;
     --on-solid: #ffffff;
+    --hatch: rgba(228, 234, 241, .17);
+    --hatch-on-solid: rgba(255, 255, 255, .26);
+    --tick: #ff6a5a;
+    --tick-on-solid: #ffc9c2;
     --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px rgba(0, 0, 0, .35);
   }
 
@@ -145,6 +166,15 @@
   .swatch.feature {
     border-color: var(--feat-line);
     background: var(--feat-bg);
+  }
+
+  .swatch.done {
+    border-color: var(--rail-ink);
+    background: var(--hatching), var(--surface);
+  }
+
+  .tally {
+    font-variant-numeric: tabular-nums;
   }
 
   .stroke {
@@ -248,13 +278,33 @@
   }
 
   .node .id {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: .06em;
+  }
+
+  .node .tick[hidden] {
+    display: none;
+  }
+
+  .node .tick {
+    font-size: 12px;
+    letter-spacing: 0;
+    /* Set on the tick itself, so it survives the white the solid states give .id. */
+    color: var(--tick);
+  }
+
+  .node.selected .tick,
+  .node.direct .tick {
+    color: var(--tick-on-solid);
   }
 
   .node .name {
     font-size: 13px;
+    font-weight: 700;
     color: var(--ink);
     white-space: nowrap;
   }
@@ -275,6 +325,27 @@
 
   .node.feature .id {
     color: var(--feat-ink);
+  }
+
+  /* Done is hatched over the node's own colour rather than replacing it, so kind
+     still reads at a glance. The overlay is a layer of its own because the
+     background belongs to .node.task / .node.feature. */
+  .node.done {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .node.done::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--hatching);
+    pointer-events: none;
+  }
+
+  /* Positioned, so the text paints over the overlay that precedes it. */
+  .node.done > span {
+    position: relative;
   }
 
   .node:hover {
@@ -321,6 +392,11 @@
   .node.task.selected,
   .node.feature.selected {
     box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+  }
+
+  .node.done.selected::before,
+  .node.done.direct::before {
+    background: var(--hatching-solid);
   }
 
   .node.task.upstream {
@@ -435,6 +511,56 @@
     color: var(--ink);
   }
 
+  /* Only ever shown when the page could not read the progress file itself,
+     which is the normal case for a page opened straight off disk. */
+  .drop {
+    border: 1px dashed var(--line);
+    border-radius: 6px;
+    background: var(--surface);
+    padding: 12px 16px;
+    font-family: var(--font-sans);
+    font-size: 13px;
+    color: var(--muted);
+    transition: border-color .16s ease, color .16s ease;
+  }
+
+  .drop[hidden] {
+    display: none;
+  }
+
+  .drop.over {
+    border-color: var(--accent);
+    border-style: solid;
+    color: var(--ink);
+  }
+
+  .drop p {
+    margin: 0;
+  }
+
+  .drop code {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink);
+  }
+
+  .drop button {
+    appearance: none;
+    font: inherit;
+    font-size: 13px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--accent);
+    text-decoration: underline;
+    cursor: pointer;
+  }
+
+  .drop button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
   .footnote {
     margin: 0;
     font-family: var(--font-sans);
@@ -458,13 +584,16 @@
     <h1>__TITLE__</h1>
     <p class="lede">
       Tasks and features in one tree, ordered by depth: a row can only start once every row above it
-      has landed. Hover anything for its description; click any node to trace what it depends on.
+      has landed. Hatched and ticked nodes are done. Hover anything for its description; click any
+      node to trace what it depends on.
     </p>
     <div class="legend">
       <span class="key"><span class="swatch"></span> Task</span>
       <span class="key"><span class="swatch feature"></span> Feature</span>
+      <span class="key"><span class="swatch done"></span> Done</span>
       <span class="key"><span class="stroke"></span> Order</span>
       <span class="key"><span class="stroke dashed"></span> Coverage</span>
+      <span class="key tally" id="tally"></span>
     </div>
   </header>
 
@@ -477,6 +606,16 @@
 
   <div class="status" id="status" role="status" aria-live="polite"></div>
 
+  <div class="drop" id="drop" hidden>
+    <p>
+      Could not read <code id="drop-name"></code> from here — a page opened as a file cannot
+      fetch its neighbours. Drop it anywhere on this page or
+      <button type="button" id="drop-pick">choose it</button> to tick what is done, or serve this
+      directory (<code>python -m http.server</code>) and it loads by itself.
+    </p>
+    <input type="file" id="drop-input" accept=".md,text/markdown" multiple hidden>
+  </div>
+
   <p class="footnote">__GENERATED__</p>
 </div>
 
@@ -487,11 +626,17 @@
 
 <script>
   // Written by tools/deps-graph.py; the line below is replaced wholesale.
-  const GRAPH = {"nodes": [], "order": [], "coverage": []}; /*__GRAPH_DATA__*/
+  const GRAPH = {"nodes": [], "order": [], "coverage": [], "progress": []}; /*__GRAPH_DATA__*/
 
   const NODES = GRAPH.nodes;
   const ORDER = GRAPH.order;
   const COVERAGE = GRAPH.coverage;
+  // Named by ## Progress in deps.md, resolved against this page. What is finished
+  // is read here at open, so the file you are reading never has to be rebuilt for it.
+  const PROGRESS = GRAPH.progress || [];
+
+  // The bullet form the docs already use: - **W-02 Name** — what was done.
+  const BULLET = /^\s*[-*]\s+\*\*([A-Za-z0-9][\w.]*(?:-[\w.]+)*)\s+[^*]+?\*\*\s*(?:[—–]|--)\s*\S/;
 
   const SVG_NS = 'http://www.w3.org/2000/svg';
   const byId = new Map(NODES.map(n => [n.id, n]));
@@ -544,6 +689,17 @@
     const id = document.createElement('span');
     id.className = 'id';
     id.textContent = n.id;
+
+    // Built hidden rather than on demand: progress arrives after the rows do,
+    // and toggling an attribute beats rebuilding the node.
+    const tick = document.createElement('span');
+    tick.className = 'tick';
+    tick.textContent = '✓';
+    // Spelt out, since the hatching says nothing to a screen reader.
+    tick.setAttribute('aria-label', 'done');
+    tick.setAttribute('role', 'img');
+    tick.hidden = true;
+    id.appendChild(tick);
 
     const name = document.createElement('span');
     name.className = 'name';
@@ -665,7 +821,7 @@
     const { node, direct, upstream } = state;
     const heading = document.createElement('span');
     heading.className = 'heading ids';
-    heading.textContent = `${node.id} ${node.name}`;
+    heading.textContent = title(node);
     statusEl.appendChild(heading);
 
     if (node.kind === 'feature') {
@@ -697,12 +853,104 @@
     return frag;
   }
 
+  function title(node) {
+    return `${node.id} ${node.name}${node.done ? '  ✓ done' : ''}`;
+  }
+
   function list(ids, empty) {
-    return ids.length ? [...ids].sort().join('  ') : empty;
+    // Ticked here too, so a row of prerequisites shows at a glance what is left.
+    const shown = [...ids].sort().map(id => byId.get(id).done ? `${id} ✓` : id);
+    return shown.length ? shown.join('   ') : empty;
+  }
+
+  function renderTally() {
+    const count = kind => {
+      const of = NODES.filter(n => n.kind === kind);
+      return `${of.filter(n => n.done).length}/${of.length} ${kind}s`;
+    };
+    document.getElementById('tally').textContent = `Done ${count('task')}, ${count('feature')}`;
+  }
+
+  // --------------------------------------------------------------- progress
+
+  function readIds(text) {
+    const ids = new Set();
+    text.split(/\r?\n/).forEach(line => {
+      const bullet = BULLET.exec(line);
+      if (bullet) ids.add(bullet[1]);
+    });
+    return ids;
+  }
+
+  /** Tasks are done because they are written up; a feature because its tasks all are. */
+  function applyProgress(ids) {
+    NODES.forEach(n => {
+      if (n.kind === 'task') n.done = ids.has(n.id);
+    });
+    NODES.forEach(n => {
+      if (n.kind !== 'feature') return;
+      const tasks = COVERAGE.filter(([, feature]) => feature === n.id).map(([task]) => task);
+      n.done = tasks.length > 0 && tasks.every(task => byId.get(task).done);
+    });
+
+    NODES.forEach(n => {
+      const el = els.get(n.id);
+      el.classList.toggle('done', Boolean(n.done));
+      el.querySelector('.tick').hidden = !n.done;
+    });
+
+    renderTally();
+    if (selected) select(selected);
+  }
+
+  async function loadProgress() {
+    if (!PROGRESS.length) return;
+    try {
+      const texts = await Promise.all(PROGRESS.map(async file => {
+        const response = await fetch(file, { cache: 'no-store' });
+        if (!response.ok) throw new Error(`${file}: ${response.status}`);
+        return response.text();
+      }));
+      applyProgress(readIds(texts.join('\n')));
+    } catch (error) {
+      // A page opened as a file gets an opaque origin, so fetching a sibling is
+      // blocked outright. Nothing to do but ask for the file directly.
+      offerDrop();
+    }
+  }
+
+  function offerDrop() {
+    const drop = document.getElementById('drop');
+    const input = document.getElementById('drop-input');
+    document.getElementById('drop-name').textContent = PROGRESS.join(', ');
+    drop.hidden = false;
+
+    const take = files => Promise.all([...files].map(file => file.text()))
+      .then(texts => {
+        applyProgress(readIds(texts.join('\n')));
+        drop.hidden = true;
+      });
+
+    document.getElementById('drop-pick').addEventListener('click', () => input.click());
+    input.addEventListener('change', () => take(input.files));
+
+    // Anywhere on the page, so the strip is a hint rather than a target to hit.
+    document.addEventListener('dragover', event => {
+      event.preventDefault();
+      drop.classList.add('over');
+    });
+    document.addEventListener('dragleave', event => {
+      if (!event.relatedTarget) drop.classList.remove('over');
+    });
+    document.addEventListener('drop', event => {
+      event.preventDefault();
+      drop.classList.remove('over');
+      if (event.dataTransfer.files.length) take(event.dataTransfer.files);
+    });
   }
 
   function showTip(node, el) {
-    tipId.textContent = `${node.id} ${node.name}`;
+    tipId.textContent = title(node);
     tipDesc.textContent = node.desc;
     tip.className = 'tip ' + node.kind;
     tip.dataset.open = 'true';
@@ -728,6 +976,8 @@
   buildEdges();
   drawEdges();
   renderStatus(null);
+  renderTally();
+  loadProgress();
 
   board.addEventListener('click', () => select(null));
   document.addEventListener('keydown', event => {
