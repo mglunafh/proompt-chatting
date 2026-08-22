@@ -7,18 +7,21 @@ import org.junit.jupiter.api.Test
 import kotlin.time.Duration.Companion.milliseconds
 
 class DatabaseConfigTest {
-    private fun from(vararg env: Pair<String, String>) = DatabaseConfig.from(Config(mapOf("DB_PASSWORD" to "hunter2", *env)))
+    private fun from(vararg values: Pair<String, String>) =
+        DatabaseConfig.from(
+            Config(listOf(Environment(mapOf("DB_PASSWORD" to "hunter2", *values)))).resolveAll(),
+        )
 
     @Test
     fun `an environment carrying only the password still describes a local database`() {
         val config = from()
 
-        assertEquals(DatabaseConfig.DEFAULT_HOST, config.host)
-        assertEquals(DatabaseConfig.DEFAULT_PORT, config.port)
-        assertEquals(DatabaseConfig.DEFAULT_DATABASE, config.database)
-        assertEquals(DatabaseConfig.DEFAULT_USER, config.user)
-        assertEquals(DatabaseConfig.DEFAULT_MAX_POOL_SIZE, config.maxPoolSize)
-        assertEquals(DatabaseConfig.DEFAULT_CONNECTION_TIMEOUT_MS.milliseconds, config.connectionTimeout)
+        assertEquals("localhost", config.host)
+        assertEquals(5432, config.port)
+        assertEquals("chatting", config.database)
+        assertEquals("chatting", config.user)
+        assertEquals(10, config.maxPoolSize)
+        assertEquals(5_000.milliseconds, config.connectionTimeout)
     }
 
     @Test
@@ -62,7 +65,7 @@ class DatabaseConfigTest {
     @Test
     fun `a database without a password refuses to boot rather than trying a blank one`() {
         assertThrows(ConfigException::class.java) {
-            DatabaseConfig.from(Config(emptyMap()))
+            DatabaseConfig.from(Config(listOf(Environment(emptyMap()))).resolveAll())
         }
     }
 }

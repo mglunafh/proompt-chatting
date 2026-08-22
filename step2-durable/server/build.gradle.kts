@@ -47,3 +47,9 @@ dependencies {
 application {
     mainClass.set("dev.burufi.chatting.durable.server.ServerKt")
 }
+
+// Gradle's -D reaches the Gradle JVM, not the application's, so without this
+// `gradlew run -Dserver.config=...` would silently resolve nothing.
+tasks.named<JavaExec>("run") {
+    providers.systemProperty("server.config").orNull?.let { systemProperty("server.config", it) }
+}
