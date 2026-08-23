@@ -10,6 +10,7 @@ enum class Setting(
     val default: String? = null,
     val secret: Boolean = false,
 ) {
+    SERVER_PORT("SERVER_PORT", "server.port", Type.INT, "8080"),
     DB_HOST("DB_HOST", "db.host", Type.STRING, "localhost"),
     DB_PORT("DB_PORT", "db.port", Type.INT, "5432"),
     DB_NAME("DB_NAME", "db.name", Type.STRING, "chatting"),

@@ -1,5 +1,7 @@
 plugins {
     alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.shadow)
     application
 }
 
@@ -48,8 +50,21 @@ application {
     mainClass.set("dev.burufi.chatting.durable.server.ServerKt")
 }
 
-// Gradle's -D reaches the Gradle JVM, not the application's, so without this
-// `gradlew run -Dserver.config=...` would silently resolve nothing.
+tasks.shadowJar {
+    archiveFileName.set("server.jar")
+    // Flyway's database modules, the JDBC driver and Ktor all resolve through META-INF/services.
+    // Without the merge the jar builds and then fails at boot, which is the worse failure.
+    // INCLUDE is what lets the merge see every copy: under the default EXCLUDE all but the
+    // first are dropped before the transformer runs, which silently cost flyway-core 36 of its
+    // 39 plugin entries.
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    mergeServiceFiles()
+}
+
+// Gradle's -D reaches the Gradle JVM, not the application's so we got to pass
+// application-related properties through to make an effect.
 tasks.named<JavaExec>("run") {
-    providers.systemProperty("server.config").orNull?.let { systemProperty("server.config", it) }
+    listOf("server.", "db.").forEach { prefix ->
+        systemProperties(providers.systemPropertiesPrefixedBy(prefix).get())
+    }
 }

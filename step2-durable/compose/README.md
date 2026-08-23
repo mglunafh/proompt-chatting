@@ -1,11 +1,31 @@
 # Deployment files for `step2-durable`
 
-## Bringing the database up
+Every command here is written from the repository root, the same place the
+`gradlew` invocations further down are run from.
+
+## Bringing the whole stack up
 
 ```sh
-cp secrets/db_password.example secrets/db_password   # then edit it
-docker compose up -d db
-docker compose ps                                    # wait for "healthy"
+cp step2-durable/compose/secrets/db_password.example \
+   step2-durable/compose/secrets/db_password              # then edit it
+
+docker compose -f step2-durable/compose/compose.yaml up -d --build
+docker compose -f step2-durable/compose/compose.yaml ps   # both services "healthy"
+curl -s localhost:8080/health                             # {"status":"ok"}
+```
+
+You can export the path to compose file as `COMPOSE_FILE` for the subsequent
+`docker compose` invocations to pick up :
+
+```sh
+export COMPOSE_FILE=step2-durable/compose/compose.yaml
+```
+
+## Bringing the database up alone
+
+```sh
+docker compose -f step2-durable/compose/compose.yaml up -d db
+docker compose -f step2-durable/compose/compose.yaml ps   # wait for "healthy"
 ```
 
 The data lives in the named volume `pgdata`.
@@ -22,6 +42,7 @@ the official `postgres` image policy.
 
 | Variable                   | Property                   | Default     |
 |----------------------------|----------------------------|-------------|
+| `SERVER_PORT`              | `server.port`              | `8080`      |
 | `DB_HOST`                  | `db.host`                  | `localhost` |
 | `DB_PORT`                  | `db.port`                  | `5432`      |
 | `DB_NAME`                  | `db.name`                  | `chatting`  |
@@ -56,8 +77,12 @@ db.password.file=../compose/secrets/db_password
 ./gradlew :step2-durable:server:run -Dserver.config=server.properties
 ```
 
-`-Dserver.config` is resolved against the running process's working directory,
-and `gradlew run` sets that to `step2-durable/server` — hence the bare name
-above rather than a path from the repository root. The `db.password.file` inside
-the file is different: it anchors to the file's own directory, so it keeps
-pointing at the same secret wherever the server is started from.
+```sh
+./gradlew :step2-durable:server:run \
+  -Dserver.port=9090 -Ddb.host=127.0.0.1 \
+  -Ddb.password.file=../compose/secrets/db_password
+```
+
+This `gradlew run` command sets working directory to `step2-durable/server`,
+so `-Dserver.config` and any `.file` properties should be set to be correctly resolved
+against that.

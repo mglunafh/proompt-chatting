@@ -123,6 +123,22 @@ class ConfigTest {
     }
 
     @Test
+    fun `the bind port comes from configuration, so a deployment can move it off 8080`() {
+        assertEquals(9000, withPassword("SERVER_PORT" to "9000").int(Setting.SERVER_PORT))
+        assertEquals(8080, withPassword().int(Setting.SERVER_PORT))
+    }
+
+    @Test
+    fun `a bind port that is not a number is refused at boot like every other int`() {
+        val error = assertThrows(ConfigException::class.java) { withPassword("SERVER_PORT" to "eighty") }
+
+        assertTrue(
+            error.message!!.contains("SERVER_PORT") && error.message!!.contains("eighty"),
+            "a port typo must fail the boot rather than bind somewhere unexpected: ${error.message}",
+        )
+    }
+
+    @Test
     fun `the boot report never prints a secret`() {
         val report = withPassword().report()
 

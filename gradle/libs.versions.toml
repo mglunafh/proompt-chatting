@@ -2,6 +2,7 @@
 # Plugin versions
 kotlin = "2.3.21"
 ktlint = "14.2.0"
+shadow = "9.6.1"
 
 # BOM versions
 ktor = "3.5.1"
@@ -73,3 +74,4 @@ mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
+shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }
