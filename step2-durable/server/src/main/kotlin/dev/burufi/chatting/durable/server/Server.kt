@@ -23,7 +23,8 @@ fun main() {
     val config = DatabaseConfig.from(resolved)
 
     log.info("connecting to {} as {}", config.jdbcUrl, config.user)
-    DatabaseUtils.openPool(config).use { pool ->
+    DatabaseUtils.createConnectionPool(config).use { pool ->
+        DatabaseUtils.connect(pool)
         val result = DatabaseUtils.migrate(pool)
         if (result.migrationsExecuted == 0) {
             // targetSchemaVersion is null when nothing ran, so the version comes from where it started.

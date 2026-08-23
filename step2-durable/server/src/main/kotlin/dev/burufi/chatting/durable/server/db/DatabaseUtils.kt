@@ -12,11 +12,7 @@ object DatabaseUtils {
     const val POOL_NAME = "chatting-pool"
     const val MIGRATION_LOCATION = "classpath:db/migration"
 
-    /**
-     * The one pool the process owns: opened at boot, closed on shutdown, and bound to Exposed
-     * here so nothing downstream is tempted to open a second one.
-     */
-    fun openPool(config: DatabaseConfig): HikariDataSource {
+    fun createConnectionPool(config: DatabaseConfig): HikariDataSource {
         val hikari =
             HikariConfig().apply {
                 jdbcUrl = config.jdbcUrl
@@ -26,14 +22,14 @@ object DatabaseUtils {
                 connectionTimeout = config.connectionTimeout.inWholeMilliseconds
                 poolName = POOL_NAME
             }
-        val dataSource = HikariDataSource(hikari)
-        Database.connect(dataSource)
-        return dataSource
+        return HikariDataSource(hikari)
     }
 
     /**
-     * Runs migrations on a database connection.
+     * Binds a pool to Exposed and hands back the database handle.
      */
+    fun connect(dataSource: DataSource): Database = Database.connect(dataSource)
+
     fun migrate(dataSource: DataSource): MigrateResult =
         Flyway
             .configure()

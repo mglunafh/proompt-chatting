@@ -1,29 +1,21 @@
 package dev.burufi.chatting.durable.server.db
 
-import com.zaxxer.hikari.HikariConfig
-import com.zaxxer.hikari.HikariDataSource
 import dev.burufi.chatting.durable.server.db.schema.schemaTables
-import org.flywaydb.core.api.output.MigrateResult
-import org.jetbrains.exposed.v1.jdbc.Database
+import dev.burufi.chatting.durable.server.testing.TestDatabase
+import dev.burufi.chatting.durable.server.testing.rollingBack
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
-import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import org.testcontainers.junit.jupiter.Container
-import org.testcontainers.junit.jupiter.Testcontainers
-import org.testcontainers.postgresql.PostgreSQLContainer
 import java.sql.Connection
 import java.sql.SQLException
 
-@Testcontainers
 class SchemaTest {
     @Test
     fun `the first migration applies one version to an empty database`() {
-        assertEquals(1, firstRun.migrationsExecuted, "V1 is the whole schema for this step")
+        assertEquals(1, TestDatabase.migration.migrationsExecuted, "V1 is the whole schema for this step")
     }
 
     @Test
@@ -37,7 +29,7 @@ class SchemaTest {
     fun `migrating again applies nothing, which is what lets every boot call it`() {
         assertEquals(
             0,
-            DatabaseUtils.migrate(dataSource).migrationsExecuted,
+            DatabaseUtils.migrate(TestDatabase.pool).migrationsExecuted,
             "a second run must be a no-op, not a failure",
         )
     }
@@ -45,7 +37,7 @@ class SchemaTest {
     @Test
     fun `every mapped column matches the migrated one, so a query cannot outrun the DDL`() {
         val mapped =
-            transaction {
+            transaction(TestDatabase.db) {
                 schemaTables.associate { table ->
                     table.tableName to
                         table.columns.associate {
@@ -168,17 +160,6 @@ class SchemaTest {
 
     // ------------------------------------------------------------------ helpers
 
-    /** Writes and rolls back, so each test starts from the same freshly migrated schema. */
-    private fun <T> rollingBack(block: (Connection) -> T): T =
-        dataSource.connection.use { connection ->
-            connection.autoCommit = false
-            try {
-                block(connection)
-            } finally {
-                connection.rollback()
-            }
-        }
-
     private fun assertViolates(
         state: String,
         why: String,
@@ -230,7 +211,7 @@ class SchemaTest {
         }
 
     private fun publicTables(): Set<String> =
-        dataSource.connection.use { connection ->
+        TestDatabase.pool.connection.use { connection ->
             connection
                 .prepareStatement("select table_name from information_schema.tables where table_schema = 'public'")
                 .use { statement ->
@@ -241,7 +222,7 @@ class SchemaTest {
         }
 
     private fun databaseColumns(table: String): Map<String, Shape> =
-        dataSource.connection.use { connection ->
+        TestDatabase.pool.connection.use { connection ->
             connection
                 .prepareStatement(
                     "select column_name, data_type, is_nullable from information_schema.columns " +
@@ -262,7 +243,7 @@ class SchemaTest {
         }
 
     private fun indexDefinition(name: String): String? =
-        dataSource.connection.use { connection ->
+        TestDatabase.pool.connection.use { connection ->
             connection.prepareStatement("select indexdef from pg_indexes where indexname = ?").use { statement ->
                 statement.setString(1, name)
                 statement.executeQuery().use { rows -> if (rows.next()) rows.getString(1) else null }
@@ -281,35 +262,6 @@ class SchemaTest {
         private const val UNIQUE_VIOLATION = "23505"
         private const val CHECK_VIOLATION = "23514"
         private const val NOT_NULL_VIOLATION = "23502"
-
-        @Container
-        @JvmStatic
-        private val postgres = PostgreSQLContainer("postgres:17-alpine")
-
-        private lateinit var dataSource: HikariDataSource
-        private lateinit var firstRun: MigrateResult
-
-        @BeforeAll
-        @JvmStatic
-        fun migrateOnce() {
-            dataSource =
-                HikariDataSource(
-                    HikariConfig().apply {
-                        jdbcUrl = postgres.jdbcUrl
-                        username = postgres.username
-                        password = postgres.password
-                        maximumPoolSize = 4
-                    },
-                )
-            firstRun = DatabaseUtils.migrate(dataSource)
-            Database.connect(dataSource)
-        }
-
-        @AfterAll
-        @JvmStatic
-        fun closePool() {
-            dataSource.close()
-        }
 
         /**
          * Exposed spells an auto-incrementing key as the serial pseudo-type Postgres expands
