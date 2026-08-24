@@ -1,5 +1,7 @@
 # Implementation progress
 
+- **W-07 Validation** — username, password and message body rules as pure functions in `shared`, the
+  password blocklist shipped beside them as a resource. SEC-05, SEC-06, SEC-07.
 - **W-06 Protocol module** — Server and client frame hierarchies. MSG-04, SEC-07, SEC-08.
 - **W-05 Server entry point and health** — Ktor CIO application adds a health-check (auth and db are
   not included), json encoder for logs. Added a Shadow fat jar, a multi-stage Dockerfile built from

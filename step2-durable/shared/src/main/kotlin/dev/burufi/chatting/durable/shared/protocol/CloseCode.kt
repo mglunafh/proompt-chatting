@@ -1,4 +1,4 @@
-package dev.burufi.chatting.durable.shared
+package dev.burufi.chatting.durable.shared.protocol
 
 /**
  * The application close codes, which stop a client's reconnect loop. Passed in a WebSocket frame.

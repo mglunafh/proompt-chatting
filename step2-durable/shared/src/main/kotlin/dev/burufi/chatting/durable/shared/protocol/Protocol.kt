@@ -1,4 +1,4 @@
-package dev.burufi.chatting.durable.shared
+package dev.burufi.chatting.durable.shared.protocol
 
 /** Where the socket is, and which version of this module the two sides must share. */
 object Protocol {

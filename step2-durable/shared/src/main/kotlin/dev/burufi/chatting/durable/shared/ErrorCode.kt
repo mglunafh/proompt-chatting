@@ -4,13 +4,25 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * Why a client frame was refused, the machine-readable half of [ServerFrame.Error].
+ * Why an input was refused. Most of these are the machine-readable half of the server's
+ * error frame; the two credential codes reach a REST response instead, since no frame in
+ * this step carries a username or a password.
+ *
+ * Lives above both subpackages because the frames carry it and the rules produce it.
  */
 @Serializable
 enum class ErrorCode {
     /** A frame that would not decode: unknown key, unknown or absent type, missing field. */
     @SerialName("malformed_frame")
     MALFORMED_FRAME,
+
+    /** The username fails the pattern, the length cap, or is reserved. */
+    @SerialName("invalid_username")
+    INVALID_USERNAME,
+
+    /** The password breaks a length bound, or is one the blocklist names. */
+    @SerialName("invalid_password")
+    INVALID_PASSWORD,
 
     /** The addressee of a send is not a known account. */
     @SerialName("unknown_recipient")

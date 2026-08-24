@@ -1,5 +1,7 @@
-package dev.burufi.chatting.durable.shared
+package dev.burufi.chatting.durable.shared.protocol
 
+import dev.burufi.chatting.durable.shared.ErrorCode
+import dev.burufi.chatting.durable.shared.TestCharacters
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.descriptors.elementNames

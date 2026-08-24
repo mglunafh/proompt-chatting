@@ -1,5 +1,6 @@
-package dev.burufi.chatting.durable.shared
+package dev.burufi.chatting.durable.shared.protocol
 
+import dev.burufi.chatting.durable.shared.ErrorCode
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlin.time.Instant

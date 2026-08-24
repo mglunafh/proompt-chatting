@@ -1,4 +1,4 @@
-package dev.burufi.chatting.durable.shared
+package dev.burufi.chatting.durable.shared.protocol
 
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json

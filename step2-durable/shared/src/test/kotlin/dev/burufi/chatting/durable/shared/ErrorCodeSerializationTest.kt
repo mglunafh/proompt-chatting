@@ -1,5 +1,6 @@
 package dev.burufi.chatting.durable.shared
 
+import dev.burufi.chatting.durable.shared.protocol.ProtocolJson
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.serializer
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -12,6 +13,8 @@ class ErrorCodeSerializationTest {
     @ParameterizedTest
     @CsvSource(
         "MALFORMED_FRAME, malformed_frame",
+        "INVALID_USERNAME, invalid_username",
+        "INVALID_PASSWORD, invalid_password",
         "UNKNOWN_RECIPIENT, unknown_recipient",
         "BODY_EMPTY, body_empty",
         "BODY_TOO_LARGE, body_too_large",
@@ -29,7 +32,7 @@ class ErrorCodeSerializationTest {
 
     @Test
     fun `every code is covered by the cases above`() {
-        assertEquals(7, ErrorCode.entries.size, "a code added without a case here would go unchecked")
+        assertEquals(9, ErrorCode.entries.size, "a code added without a case here would go unchecked")
     }
 
     @Test
