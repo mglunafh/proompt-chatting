@@ -51,7 +51,7 @@ private suspend fun DefaultWebSocketServerSession.runChat(registry: ConnectionRe
             }
         }
         for (frame in incoming) {
-            handleFrame(session, frame)
+            handleFrame(name, registry, session, frame)
         }
     } finally {
         if (registered) {
@@ -62,6 +62,8 @@ private suspend fun DefaultWebSocketServerSession.runChat(registry: ConnectionRe
 }
 
 private suspend fun handleFrame(
+    sender: String,
+    registry: ConnectionRegistry,
     session: KtorSession,
     frame: Frame,
 ) {
@@ -76,14 +78,16 @@ private suspend fun handleFrame(
                     return
                 }
             when (clientFrame) {
-                is ClientFrame.Send -> validateOrError(session, clientFrame)
+                is ClientFrame.Send -> routeSend(sender, registry, session, clientFrame)
             }
         }
         else -> session.send(ServerFrame.Error("unsupported frame type"))
     }
 }
 
-private suspend fun validateOrError(
+private suspend fun routeSend(
+    sender: String,
+    registry: ConnectionRegistry,
     session: KtorSession,
     send: ClientFrame.Send,
 ) {
@@ -100,5 +104,11 @@ private suspend fun validateOrError(
             return
         }
         is ValidationOutcome.Ok -> {}
+    }
+    val message = ServerFrame.Message(sender = sender, body = send.body)
+    if (registry.sendTo(send.recipient, message)) {
+        session.send(message)
+    } else {
+        session.send(ServerFrame.Error("recipient ${send.recipient} is not connected"))
     }
 }

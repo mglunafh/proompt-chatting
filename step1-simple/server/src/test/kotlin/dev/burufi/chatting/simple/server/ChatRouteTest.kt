@@ -199,6 +199,74 @@ class ChatRouteTest {
                 aliceFrames,
             )
         }
+
+    @Test
+    fun `send to connected recipient delivers and echoes to sender`() =
+        testApplication {
+            application { chatModule() }
+            val client = createClient { install(ClientWebSockets) }
+            val aliceFrames = mutableListOf<ServerFrame>()
+            val bobFrames = mutableListOf<ServerFrame>()
+            val aliceReady = CompletableDeferred<Unit>()
+
+            coroutineScope {
+                val aliceJob =
+                    launch {
+                        client.webSocket("/chat?name=alice") {
+                            aliceFrames += nextServerFrame()
+                            aliceReady.complete(Unit)
+                            aliceFrames += nextServerFrame()
+                            send(Frame.Text("""{"type":"send","recipient":"bob","body":"hi bob"}"""))
+                            aliceFrames += nextServerFrame()
+                        }
+                    }
+
+                aliceReady.await()
+
+                val bobJob =
+                    launch {
+                        client.webSocket("/chat?name=bob") {
+                            bobFrames += nextServerFrame()
+                            bobFrames += nextServerFrame()
+                        }
+                    }
+
+                aliceJob.join()
+                bobJob.join()
+            }
+
+            assertEquals(
+                listOf(
+                    ServerFrame.Roster(listOf("alice")),
+                    ServerFrame.Joined(name = "bob"),
+                    ServerFrame.Message(sender = "alice", body = "hi bob"),
+                ),
+                aliceFrames,
+            )
+            assertEquals(
+                listOf(
+                    ServerFrame.Roster(listOf("alice", "bob")),
+                    ServerFrame.Message(sender = "alice", body = "hi bob"),
+                ),
+                bobFrames,
+            )
+        }
+
+    @Test
+    fun `send to disconnected recipient returns Error to sender`() =
+        testApplication {
+            application { chatModule() }
+            val client = createClient { install(ClientWebSockets) }
+
+            client.webSocket("/chat?name=alice") {
+                assertEquals(ServerFrame.Roster(listOf("alice")), nextServerFrame())
+                send(Frame.Text("""{"type":"send","recipient":"nobody","body":"hi"}"""))
+                assertEquals(
+                    ServerFrame.Error("recipient nobody is not connected"),
+                    nextServerFrame(),
+                )
+            }
+        }
 }
 
 private suspend fun DefaultClientWebSocketSession.nextServerFrame(): ServerFrame {
