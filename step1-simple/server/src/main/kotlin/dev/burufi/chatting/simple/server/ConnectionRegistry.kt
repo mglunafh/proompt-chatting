@@ -1,22 +1,26 @@
 package dev.burufi.chatting.simple.server
 
 import dev.burufi.chatting.simple.shared.ServerFrame
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.util.concurrent.ConcurrentHashMap
 
 class ConnectionRegistry {
     private val connections = ConcurrentHashMap<String, Session>()
+    private val mutex = Mutex()
 
-    fun register(
+    suspend fun register(
         name: String,
         session: Session,
-    ): RegistrationOutcome {
-        val prior = connections.putIfAbsent(name, session)
-        return if (prior == null) {
-            RegistrationOutcome.Registered(roster())
-        } else {
-            RegistrationOutcome.Duplicate
+    ): RegistrationOutcome =
+        mutex.withLock {
+            val prior = connections.putIfAbsent(name, session)
+            if (prior == null) {
+                RegistrationOutcome.Registered(roster())
+            } else {
+                RegistrationOutcome.Duplicate
+            }
         }
-    }
 
     fun unregister(name: String): Session? = connections.remove(name)
 

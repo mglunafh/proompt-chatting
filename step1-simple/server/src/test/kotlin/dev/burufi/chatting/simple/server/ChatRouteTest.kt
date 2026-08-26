@@ -1,16 +1,19 @@
 package dev.burufi.chatting.simple.server
 
 import dev.burufi.chatting.simple.shared.ServerFrame
+import io.ktor.client.plugins.websocket.DefaultClientWebSocketSession
 import io.ktor.client.plugins.websocket.webSocket
 import io.ktor.server.testing.testApplication
 import io.ktor.websocket.CloseReason
 import io.ktor.websocket.Frame
 import io.ktor.websocket.readText
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import io.ktor.client.plugins.websocket.WebSockets as ClientWebSockets
@@ -73,12 +76,11 @@ class ChatRouteTest {
             val client = createClient { install(ClientWebSockets) }
 
             client.webSocket("/chat?name=alice") {
+                val roster = nextServerFrame()
+                assertEquals(ServerFrame.Roster(listOf("alice")), roster)
                 send(Frame.Text("""{"type":"send","recipient":"bob","body":"\u001B[31mred"}"""))
-                val frame = withTimeout(1000) { incoming.receive() }
-                assertInstanceOf(Frame.Text::class.java, frame)
-                val text = (frame as Frame.Text).readText()
-                val serverFrame = Json.decodeFromString(ServerFrame.serializer(), text)
-                assertInstanceOf(ServerFrame.Error::class.java, serverFrame)
+                val errorFrame = nextServerFrame()
+                assertEquals(ServerFrame.Error("body contains a forbidden control character"), errorFrame)
             }
         }
 
@@ -89,14 +91,120 @@ class ChatRouteTest {
             val client = createClient { install(ClientWebSockets) }
 
             client.webSocket("/chat?name=alice") {
+                val roster = nextServerFrame()
+                assertEquals(ServerFrame.Roster(listOf("alice")), roster)
                 send(Frame.Text("not valid json {{{"))
-                val frame = withTimeout(1000) { incoming.receive() }
-                assertInstanceOf(Frame.Text::class.java, frame)
-                val text = (frame as Frame.Text).readText()
-                val serverFrame = Json.decodeFromString(ServerFrame.serializer(), text)
-                assertInstanceOf(ServerFrame.Error::class.java, serverFrame)
+                val errorFrame = nextServerFrame()
+                assertEquals(ServerFrame.Error("could not parse frame"), errorFrame)
             }
         }
+
+    @Test
+    fun `single client receives Roster as first frame`() =
+        testApplication {
+            application { chatModule() }
+            val client = createClient { install(ClientWebSockets) }
+
+            client.webSocket("/chat?name=alice") {
+                val frame = nextServerFrame()
+                assertEquals(ServerFrame.Roster(listOf("alice")), frame)
+            }
+        }
+
+    @Test
+    fun `joiner receives Roster with existing clients and existing clients receive Joined`() =
+        testApplication {
+            application { chatModule() }
+            val client = createClient { install(ClientWebSockets) }
+            val aliceFrames = mutableListOf<ServerFrame>()
+            val bobFrames = mutableListOf<ServerFrame>()
+            val aliceReady = CompletableDeferred<Unit>()
+
+            coroutineScope {
+                val aliceJob =
+                    launch {
+                        client.webSocket("/chat?name=alice") {
+                            aliceFrames += nextServerFrame()
+                            aliceReady.complete(Unit)
+                            aliceFrames += nextServerFrame()
+                        }
+                    }
+
+                aliceReady.await()
+
+                val bobJob =
+                    launch {
+                        client.webSocket("/chat?name=bob") {
+                            bobFrames += nextServerFrame()
+                        }
+                    }
+
+                aliceJob.join()
+                bobJob.join()
+            }
+
+            assertEquals(
+                listOf(
+                    ServerFrame.Roster(listOf("alice")),
+                    ServerFrame.Joined(name = "bob"),
+                ),
+                aliceFrames,
+            )
+            assertEquals(
+                listOf(ServerFrame.Roster(listOf("alice", "bob"))),
+                bobFrames,
+            )
+        }
+
+    @Test
+    fun `existing client receives Left when another client disconnects`() =
+        testApplication {
+            application { chatModule() }
+            val client = createClient { install(ClientWebSockets) }
+            val aliceFrames = mutableListOf<ServerFrame>()
+            val aliceReady = CompletableDeferred<Unit>()
+            val bobConnected = CompletableDeferred<Unit>()
+
+            coroutineScope {
+                val aliceJob =
+                    launch {
+                        client.webSocket("/chat?name=alice") {
+                            aliceFrames += nextServerFrame()
+                            aliceReady.complete(Unit)
+                            aliceFrames += nextServerFrame()
+                            bobConnected.await()
+                            aliceFrames += nextServerFrame()
+                        }
+                    }
+
+                aliceReady.await()
+
+                val bobJob =
+                    launch {
+                        client.webSocket("/chat?name=bob") {
+                            bobConnected.complete(Unit)
+                        }
+                    }
+
+                aliceJob.join()
+                bobJob.join()
+            }
+
+            assertEquals(
+                listOf(
+                    ServerFrame.Roster(listOf("alice")),
+                    ServerFrame.Joined(name = "bob"),
+                    ServerFrame.Left(name = "bob"),
+                ),
+                aliceFrames,
+            )
+        }
+}
+
+private suspend fun DefaultClientWebSocketSession.nextServerFrame(): ServerFrame {
+    val frame = withTimeout(2000) { incoming.receive() }
+    check(frame is Frame.Text)
+    return Json.decodeFromString(ServerFrame.serializer(), frame.readText())
 }
 
 private class FakeSession : Session {

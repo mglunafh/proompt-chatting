@@ -15,39 +15,42 @@ import org.junit.jupiter.api.Test
 
 class ConnectionRegistryTest {
     @Test
-    fun `register adds the name and returns the roster including it`() {
-        val registry = ConnectionRegistry()
-        val session = RecordingSession()
+    fun `register adds the name and returns the roster including it`() =
+        runBlocking {
+            val registry = ConnectionRegistry()
+            val session = RecordingSession()
 
-        val outcome = registry.register("alice", session)
+            val outcome = registry.register("alice", session)
 
-        val registered = assertInstanceOf(RegistrationOutcome.Registered::class.java, outcome)
-        assertEquals(listOf("alice"), registered.roster)
-        assertEquals(listOf("alice"), registry.roster())
-    }
-
-    @Test
-    fun `register returns Duplicate when the name is already connected`() {
-        val registry = ConnectionRegistry()
-        registry.register("alice", RecordingSession())
-
-        val outcome = registry.register("alice", RecordingSession())
-
-        assertEquals(RegistrationOutcome.Duplicate, outcome)
-        assertEquals(listOf("alice"), registry.roster())
-    }
+            val registered = assertInstanceOf(RegistrationOutcome.Registered::class.java, outcome)
+            assertEquals(listOf("alice"), registered.roster)
+            assertEquals(listOf("alice"), registry.roster())
+        }
 
     @Test
-    fun `unregister removes the name and returns the session`() {
-        val registry = ConnectionRegistry()
-        val session = RecordingSession()
-        registry.register("alice", session)
+    fun `register returns Duplicate when the name is already connected`() =
+        runBlocking {
+            val registry = ConnectionRegistry()
+            registry.register("alice", RecordingSession())
 
-        val removed = registry.unregister("alice")
+            val outcome = registry.register("alice", RecordingSession())
 
-        assertSame(session, removed)
-        assertEquals(emptyList<String>(), registry.roster())
-    }
+            assertEquals(RegistrationOutcome.Duplicate, outcome)
+            assertEquals(listOf("alice"), registry.roster())
+        }
+
+    @Test
+    fun `unregister removes the name and returns the session`() =
+        runBlocking {
+            val registry = ConnectionRegistry()
+            val session = RecordingSession()
+            registry.register("alice", session)
+
+            val removed = registry.unregister("alice")
+
+            assertSame(session, removed)
+            assertEquals(emptyList<String>(), registry.roster())
+        }
 
     @Test
     fun `unregister returns null when the name is not connected`() {
@@ -59,14 +62,15 @@ class ConnectionRegistryTest {
     }
 
     @Test
-    fun `roster lists all connected names sorted`() {
-        val registry = ConnectionRegistry()
-        registry.register("charlie", RecordingSession())
-        registry.register("alice", RecordingSession())
-        registry.register("bob", RecordingSession())
+    fun `roster lists all connected names sorted`() =
+        runBlocking {
+            val registry = ConnectionRegistry()
+            registry.register("charlie", RecordingSession())
+            registry.register("alice", RecordingSession())
+            registry.register("bob", RecordingSession())
 
-        assertEquals(listOf("alice", "bob", "charlie"), registry.roster())
-    }
+            assertEquals(listOf("alice", "bob", "charlie"), registry.roster())
+        }
 
     @Test
     fun `sendTo delivers a frame to the named session`() =

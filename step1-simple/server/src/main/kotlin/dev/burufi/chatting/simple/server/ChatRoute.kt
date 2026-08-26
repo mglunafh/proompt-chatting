@@ -37,19 +37,27 @@ private suspend fun DefaultWebSocketServerSession.runChat(registry: ConnectionRe
         is ValidationOutcome.Ok -> {}
     }
     val session = KtorSession(this)
-    when (val outcome = registry.register(name, session)) {
-        is RegistrationOutcome.Duplicate -> {
-            close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "name already connected"))
-            return
-        }
-        is RegistrationOutcome.Registered -> {}
-    }
+    var registered = false
     try {
+        when (val outcome = registry.register(name, session)) {
+            is RegistrationOutcome.Duplicate -> {
+                close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "name already connected"))
+                return
+            }
+            is RegistrationOutcome.Registered -> {
+                registered = true
+                session.send(ServerFrame.Roster(outcome.roster))
+                registry.broadcastExcept(name, ServerFrame.Joined(name))
+            }
+        }
         for (frame in incoming) {
             handleFrame(session, frame)
         }
     } finally {
-        registry.unregister(name)
+        if (registered) {
+            registry.unregister(name)
+            registry.broadcastExcept(name, ServerFrame.Left(name))
+        }
     }
 }
 
