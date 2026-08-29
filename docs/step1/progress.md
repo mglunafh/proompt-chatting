@@ -1,5 +1,6 @@
 # Implementation progress
 
+- **W-10 Client commands** — `/exit` closes the socket, `/help` lists the `@` and `/` sigils, an unknown `/word` is refused locally so it never reaches the server's message-syntax path. ST1-02.
 - **W-08 Client** — Clikt `--name`, `--host` and `--port`, the WebSocket connection at `/chat?name=<name>`, and concurrent send and receive loops that exit when the socket closes. MSG-04.
 - **W-07 Message routing** — validate the send frame, write it to the recipient's socket and echo it to the sender, refuse a name that is not connected. MSG-01.
 - **W-06 Roster and edges** — the snapshot as the first frame after the upgrade, and join and leave broadcast to every other connected client. Two in-process clients per test. USR-04, USR-05.

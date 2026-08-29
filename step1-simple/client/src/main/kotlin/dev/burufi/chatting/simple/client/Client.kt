@@ -12,7 +12,9 @@ import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.websocket.DefaultClientWebSocketSession
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.client.plugins.websocket.webSocket
+import io.ktor.websocket.CloseReason
 import io.ktor.websocket.Frame
+import io.ktor.websocket.close
 import io.ktor.websocket.readText
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
@@ -27,6 +29,12 @@ import java.nio.charset.StandardCharsets
 import kotlin.concurrent.thread
 
 private val chatJson: Json = Json.Default
+
+internal const val HELP_TEXT: String =
+    "commands:\n" +
+        "  @<recipient> <body>  send a message to a connected client\n" +
+        "  /exit                leave the chat\n" +
+        "  /help                show this help"
 
 fun main(args: Array<String>) = Client().main(args)
 
@@ -61,7 +69,7 @@ internal suspend fun DefaultClientWebSocketSession.runSession(
     emit: (String) -> Unit,
 ) {
     coroutineScope {
-        launch { sendLoop(lines) }
+        launch { sendLoop(lines, emit) }
         launch { receiveLoop(emit) }
     }
 }
@@ -92,14 +100,17 @@ private fun chatUrl(
     return "ws://$host:$port/chat?name=$encoded"
 }
 
-private suspend fun DefaultClientWebSocketSession.sendLoop(lines: ReceiveChannel<String>) {
+private suspend fun DefaultClientWebSocketSession.sendLoop(
+    lines: ReceiveChannel<String>,
+    emit: (String) -> Unit,
+) {
     for (line in lines) {
         when (val action = parseLine(line)) {
             is LineAction.Send -> send(Frame.Text(chatJson.encodeToString(ClientFrame.serializer(), action.frame)))
-            LineAction.Exit -> Unit
-            LineAction.Help -> Unit
-            is LineAction.UnknownCommand -> Unit
-            LineAction.NotACommand -> Unit
+            LineAction.Exit -> close(CloseReason(CloseReason.Codes.NORMAL, "exit"))
+            LineAction.Help -> emit(HELP_TEXT)
+            is LineAction.UnknownCommand -> emit("! unknown command: /${action.word}")
+            LineAction.NotACommand -> {}
         }
     }
 }

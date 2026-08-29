@@ -18,7 +18,12 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.clikt)
 
+    testImplementation(project(":step1-simple:server"))
+    testImplementation(platform(libs.bom.junit))
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.ktor.server.test.host)
+    testImplementation(libs.junit.jupiter)
+    testRuntimeOnly(libs.junit.platform.launcher)
 }
 
 application {
