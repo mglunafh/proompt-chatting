@@ -39,6 +39,13 @@ object Validation {
         return ValidationOutcome.Ok
     }
 
+    fun escapeControl(s: String): String =
+        buildString(s.length) {
+            for (c in s) {
+                if (isForbiddenControl(c)) append('?') else append(c)
+            }
+        }
+
     private fun byteCount(s: String): Int = s.toByteArray(Charsets.UTF_8).size
 
     private fun lineCount(s: String): Int = if (s.isEmpty()) 0 else s.split('\n').size

@@ -1,5 +1,6 @@
 # Implementation progress
 
+- **W-09 Client rendering** — replace every C0/C1/DEL character that could drive the terminal with `?`, applied to message bodies, sender names, roster names, join/leave names and error reasons. SEC-09.
 - **W-10 Client commands** — `/exit` closes the socket, `/help` lists the `@` and `/` sigils, an unknown `/word` is refused locally so it never reaches the server's message-syntax path. ST1-02.
 - **W-08 Client** — Clikt `--name`, `--host` and `--port`, the WebSocket connection at `/chat?name=<name>`, and concurrent send and receive loops that exit when the socket closes. MSG-04.
 - **W-07 Message routing** — validate the send frame, write it to the recipient's socket and echo it to the sender, refuse a name that is not connected. MSG-01.

@@ -8,7 +8,7 @@ connected name.
 ## Modules
 
 - `:step1-simple:shared` — protocol types and validation rules used by both
-  sides (W-02, W-03).
+  sides.
 - `:step1-simple:server` — a Ktor CIO server that hosts the WebSocket
   endpoint, the connection registry, and the message router.
 - `:step1-simple:client` — a console client (Clikt-based) that connects, sends

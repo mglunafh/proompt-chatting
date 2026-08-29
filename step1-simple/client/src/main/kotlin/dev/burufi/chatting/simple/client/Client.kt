@@ -7,6 +7,7 @@ import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import dev.burufi.chatting.simple.shared.ClientFrame
 import dev.burufi.chatting.simple.shared.ServerFrame
+import dev.burufi.chatting.simple.shared.Validation
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.websocket.DefaultClientWebSocketSession
@@ -125,9 +126,9 @@ private suspend fun DefaultClientWebSocketSession.receiveLoop(emit: (String) -> 
 
 private fun renderServerFrame(frame: ServerFrame): String =
     when (frame) {
-        is ServerFrame.Roster -> "[roster] ${frame.names.joinToString(", ")}"
-        is ServerFrame.Message -> "[${frame.sender}] ${frame.body}"
-        is ServerFrame.Joined -> "* ${frame.name} joined"
-        is ServerFrame.Left -> "* ${frame.name} left"
-        is ServerFrame.Error -> "! error: ${frame.reason}"
+        is ServerFrame.Roster -> "[roster] ${frame.names.joinToString(", ") { Validation.escapeControl(it) }}"
+        is ServerFrame.Message -> "[${Validation.escapeControl(frame.sender)}] ${Validation.escapeControl(frame.body)}"
+        is ServerFrame.Joined -> "* ${Validation.escapeControl(frame.name)} joined"
+        is ServerFrame.Left -> "* ${Validation.escapeControl(frame.name)} left"
+        is ServerFrame.Error -> "! error: ${Validation.escapeControl(frame.reason)}"
     }
